@@ -26,12 +26,15 @@ def register(payload: RegisterIn, response: Response):
             email=payload.email,
             password=payload.password,
             full_name=payload.full_name,
-            status="pending",  # exige aprovação do admin
+            status="active",  # auto-aprovação (beta fechado)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    # Não emitimos token até aprovação. Mas devolvemos o user pra UI.
-    return {"access_token": "", "token_type": "bearer", "user": user}
+    # Já emite token e loga direto.
+    token = create_access_token(sub=str(user["id"]),
+                                extra={"email": user["email"], "role": user["role"]})
+    _set_cookie(response, token)
+    return {"access_token": token, "token_type": "bearer", "user": user}
 
 
 @router.post("/login", response_model=TokenOut)

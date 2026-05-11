@@ -11,8 +11,8 @@
     </div>
 
     <div class="glass rounded-2xl p-6 md:p-8">
-      <h2 class="text-xl font-semibold mb-2">Solicitar acesso</h2>
-      <p class="text-xs text-muted mb-6">Sua conta passará por aprovação do admin antes do primeiro login.</p>
+      <h2 class="text-xl font-semibold mb-2">Criar conta</h2>
+      <p class="text-xs text-muted mb-6">Acesso imediato. Sem cartão de crédito.</p>
 
       <form @submit.prevent="submit()" class="space-y-4" x-show="!success">
         <div>
@@ -65,7 +65,8 @@ function registerPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Erro ao criar conta');
-        this.success = true;
+        // Auto-login: redireciona pro app
+        window.location.href = '/app';
       } catch(e) { this.error = e.message; }
       finally { this.loading = false; }
     }
