@@ -1,12 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0a0a0f" />
   <title>Brainy Prospect — Prospecção B2B com IA</title>
   <meta name="description" content="A IA que transforma um site em centenas de leads qualificados. Encontre, qualifique e aborde clientes ideais em minutos." />
   <link rel="icon" type="image/png" href="/static/icon-192.png" />
+
+  <!-- Aplicar tema antes do paint para evitar flash -->
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('bp_landing_theme') || 'light';
+        document.documentElement.dataset.theme = saved;
+      } catch (e) { document.documentElement.dataset.theme = 'light'; }
+    })();
+  </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,53 +23,111 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
   <style>
+    /* ===== Tema (variáveis) ===== */
+    :root[data-theme="light"] {
+      --bg:        #fafafb;
+      --bg-deep:   #f3f4f8;
+      --surface:   #ffffff;
+      --surface-2: #f7f8fb;
+      --text:      #0b0c14;
+      --text-muted:#475067;
+      --text-dim:  #6b7280;
+      --border:    rgba(15,23,42,0.08);
+      --border-2:  rgba(15,23,42,0.04);
+      --shadow:    0 30px 80px -30px rgba(15,23,42,0.18);
+      --grid-line: rgba(15,23,42,0.05);
+      --orb-1:     rgba(99,102,241,0.30);
+      --orb-2:     rgba(168,85,247,0.22);
+      --orb-3:     rgba(34,211,238,0.18);
+      --terminal-bg:     #ffffff;
+      --terminal-header: linear-gradient(180deg, #f6f7fb, #eef0f6);
+      --navbar-bg:       rgba(255,255,255,0.78);
+      --navbar-border:   rgba(15,23,42,0.06);
+      --grad-text:       linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0891b2 100%);
+      --meta-color:      #ffffff;
+    }
+    :root[data-theme="dark"] {
+      --bg:        #07070b;
+      --bg-deep:   #04040a;
+      --surface:   #0f0f17;
+      --surface-2: #15151f;
+      --text:      #e7e7ee;
+      --text-muted:#9ca3af;
+      --text-dim:  #6b7280;
+      --border:    rgba(255,255,255,0.07);
+      --border-2:  rgba(255,255,255,0.04);
+      --shadow:    0 30px 80px -20px rgba(0,0,0,0.6);
+      --grid-line: rgba(255,255,255,0.04);
+      --orb-1:     rgba(99,102,241,0.50);
+      --orb-2:     rgba(168,85,247,0.45);
+      --orb-3:     rgba(34,211,238,0.30);
+      --terminal-bg:     #0c0c14;
+      --terminal-header: linear-gradient(180deg, #15151f, #0f0f17);
+      --navbar-bg:       rgba(7,7,11,0.7);
+      --navbar-border:   rgba(255,255,255,0.05);
+      --grad-text:       linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 50%, #67e8f9 100%);
+      --meta-color:      #0a0a0f;
+    }
+
     * { font-family: 'Inter', system-ui, sans-serif; }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    html, body { background: #07070b; color: #e7e7ee; scroll-behavior: smooth; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      scroll-behavior: smooth;
+      transition: background-color .25s ease, color .25s ease;
+    }
+
+    /* tema reflete em meta theme-color via JS */
 
     .grain {
       background-image:
-        radial-gradient(circle at 20% 0%, rgba(99,102,241,0.18), transparent 40%),
-        radial-gradient(circle at 80% 30%, rgba(168,85,247,0.12), transparent 40%),
-        radial-gradient(circle at 50% 90%, rgba(34,211,238,0.08), transparent 40%);
+        radial-gradient(circle at 20% 0%, var(--orb-1), transparent 40%),
+        radial-gradient(circle at 80% 30%, var(--orb-2), transparent 40%),
+        radial-gradient(circle at 50% 90%, var(--orb-3), transparent 40%);
     }
     .grid-bg {
       background-image:
-        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
       background-size: 56px 56px;
       mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
       -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
     }
     .glow {
       box-shadow:
-        0 0 0 1px rgba(255,255,255,0.06),
+        0 0 0 1px var(--border),
         0 30px 80px -20px rgba(99,102,241,0.35),
-        0 0 60px rgba(99,102,241,0.15);
+        0 0 60px rgba(99,102,241,0.12);
     }
     .card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 16px;
       transition: all .3s ease;
+    }
+    [data-theme="dark"] .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
     }
     .card:hover { border-color: rgba(99,102,241,0.35); transform: translateY(-2px); }
 
     .btn-primary {
       background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      box-shadow: 0 10px 30px -10px rgba(99,102,241,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+      color: #ffffff;
+      box-shadow: 0 10px 30px -10px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
       transition: all .25s ease;
     }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 15px 40px -10px rgba(99,102,241,0.8), inset 0 1px 0 rgba(255,255,255,0.25); }
     .btn-ghost {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
       transition: all .25s ease;
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+    .btn-ghost:hover { border-color: rgba(99,102,241,0.4); }
 
     .gradient-text {
-      background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 50%, #67e8f9 100%);
+      background: var(--grad-text);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -69,45 +136,110 @@
     .badge-soft {
       background: rgba(99,102,241,0.1);
       border: 1px solid rgba(99,102,241,0.25);
-      color: #c7d2fe;
+      color: #4f46e5;
     }
+    [data-theme="dark"] .badge-soft { color: #c7d2fe; }
 
     .icon-box {
-      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08));
+      background: linear-gradient(135deg, rgba(99,102,241,0.13), rgba(139,92,246,0.06));
       border: 1px solid rgba(99,102,241,0.25);
       border-radius: 12px;
       width: 48px;
       height: 48px;
       display: flex; align-items: center; justify-content: center;
-      color: #a5b4fc;
+      color: #4f46e5;
     }
+    [data-theme="dark"] .icon-box { color: #a5b4fc; }
 
     .navbar {
       backdrop-filter: blur(16px);
-      background: rgba(7,7,11,0.7);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: var(--navbar-bg);
+      border-bottom: 1px solid var(--navbar-border);
     }
+
+    .nav-link { color: var(--text-muted); }
+    .nav-link:hover { color: var(--text); }
 
     .ring-orb {
       position: absolute;
       border-radius: 9999px;
       filter: blur(80px);
-      opacity: 0.5;
+      opacity: .55;
       pointer-events: none;
     }
 
     .terminal {
-      background: #0c0c14;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--terminal-bg);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+      box-shadow: var(--shadow);
     }
     .terminal-header {
-      background: linear-gradient(180deg, #15151f, #0f0f17);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: var(--terminal-header);
+      border-bottom: 1px solid var(--border);
       border-radius: 14px 14px 0 0;
     }
     .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+    /* utilitárias dependentes de tema */
+    .text-default { color: var(--text); }
+    .text-soft    { color: var(--text-muted); }
+    .text-faint   { color: var(--text-dim); }
+    .border-soft  { border-color: var(--border); }
+    .bg-surface   { background: var(--surface); }
+    .bg-surface-2 { background: var(--surface-2); }
+
+    /* Theme toggle button */
+    .theme-toggle {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      transition: all .25s ease;
+    }
+    .theme-toggle:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-1px); }
+    .theme-toggle .i-sun  { display: none; }
+    .theme-toggle .i-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .i-sun  { display: block; }
+    [data-theme="dark"] .theme-toggle .i-moon { display: none; }
+
+    /* ===== Overrides do Tailwind para modo claro ===== */
+    [data-theme="light"] .text-white         { color: var(--text) !important; }
+    [data-theme="light"] .text-gray-200      { color: var(--text) !important; }
+    [data-theme="light"] .text-gray-300      { color: var(--text-muted) !important; }
+    [data-theme="light"] .text-gray-400      { color: var(--text-muted) !important; }
+    [data-theme="light"] .text-gray-500      { color: var(--text-dim) !important; }
+    [data-theme="light"] .text-gray-600      { color: var(--text-dim) !important; }
+    [data-theme="light"] .hover\:text-white:hover { color: var(--text) !important; }
+
+    /* btn-primary continua branco */
+    [data-theme="light"] .btn-primary,
+    [data-theme="light"] .btn-primary .text-white { color: #fff !important; }
+
+    /* texto dentro do logo gradiente sempre branco */
+    [data-theme="light"] .bg-gradient-to-br.from-indigo-500 { color: #fff !important; }
+
+    /* Borda escura nos blocos com border-white/X */
+    [data-theme="light"] .border-white\/5,
+    [data-theme="light"] .border-white\/10 { border-color: var(--border) !important; }
+
+    /* Backgrounds white/0.0X viram superfície clara */
+    [data-theme="light"] .bg-white\/\[0\.02\],
+    [data-theme="light"] .bg-white\/\[0\.03\] { background-color: var(--surface-2) !important; }
+
+    /* Footer border */
+    [data-theme="light"] .border-white\/5 { border-color: var(--border) !important; }
+
+    /* Terminal: cores dos prompts continuam OK; texto cinza dos comandos pega override acima */
+    [data-theme="light"] .terminal { color: #1f2937; }
+    [data-theme="light"] .terminal .text-gray-500 { color: #6b7280 !important; }
+
+    /* Card "popular" do pricing usava style inline — não tem mais, mas garantir */
+    [data-theme="light"] .card[style*="rgba(99,102,241"] {
+      background: linear-gradient(180deg, rgba(99,102,241,0.06), #ffffff) !important;
+    }
 
     /* Animations */
     @keyframes float-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -179,6 +311,13 @@
       <symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>
       </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -199,7 +338,11 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <a href="/login" class="hidden sm:inline-flex btn-ghost text-sm px-4 py-2 rounded-lg text-white">Entrar</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema" title="Alternar tema">
+          <svg class="i-moon w-4 h-4"><use href="#i-moon"/></svg>
+          <svg class="i-sun w-4 h-4"><use href="#i-sun"/></svg>
+        </button>
+        <a href="/login" class="hidden sm:inline-flex btn-ghost text-sm px-4 py-2 rounded-lg">Entrar</a>
         <a href="/register" class="btn-primary inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg text-white font-medium">
           Criar conta
           <svg class="w-4 h-4"><use href="#i-arrow"/></svg>
@@ -595,12 +738,28 @@
     </div>
   </footer>
 
-  <!-- Reveal on scroll -->
+  <!-- Reveal on scroll + theme toggle -->
   <script>
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Theme toggle (claro/escuro) — padrão: claro
+    const META_THEME = document.querySelector('meta[name="theme-color"]') || (() => {
+      const m = document.createElement('meta'); m.name = 'theme-color';
+      document.head.appendChild(m); return m;
+    })();
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      META_THEME.setAttribute('content', t === 'dark' ? '#07070b' : '#fafafb');
+      try { localStorage.setItem('bp_landing_theme', t); } catch (e) {}
+    }
+    applyTheme(document.documentElement.dataset.theme || 'light');
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      const cur = document.documentElement.dataset.theme || 'light';
+      applyTheme(cur === 'dark' ? 'light' : 'dark');
+    });
   </script>
 </body>
 </html>
