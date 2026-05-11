@@ -6,7 +6,14 @@ import time
 from dataclasses import dataclass
 from typing import Iterable
 
-from playwright.sync_api import Page, TimeoutError as PWTimeout, sync_playwright
+try:  # Playwright é opcional (não instalado por padrão na versão web)
+    from playwright.sync_api import Page, TimeoutError as PWTimeout, sync_playwright
+    _PLAYWRIGHT_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    Page = None  # type: ignore[assignment]
+    PWTimeout = Exception  # type: ignore[assignment,misc]
+    sync_playwright = None  # type: ignore[assignment]
+    _PLAYWRIGHT_AVAILABLE = False
 
 from app.config import get_settings
 from app.utils.logger import get_logger
@@ -136,6 +143,9 @@ def _extract_detail(page: Page) -> dict:
 
 def search_google_maps(query: str, *, max_results: int = 20) -> list[MapsPlace]:
     """Busca empresas no Google Maps e retorna lista de MapsPlace."""
+    if not _PLAYWRIGHT_AVAILABLE:
+        log.warning("Playwright não disponível — Google Maps desativado nesta instalação.")
+        return []
     settings = get_settings().scraping
     results: list[MapsPlace] = []
     with sync_playwright() as pw:
