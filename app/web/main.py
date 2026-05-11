@@ -15,6 +15,7 @@ from app.utils.logger import get_logger
 from app.web.deps import get_current_user_optional
 from app.web.routes import admin as admin_routes
 from app.web.routes import auth as auth_routes
+from app.web.routes import extras as extras_routes
 from app.web.routes import leads as leads_routes
 from app.web.users import UserRepository
 
@@ -80,6 +81,7 @@ def create_app() -> FastAPI:
     # API routers
     app.include_router(auth_routes.router)
     app.include_router(leads_routes.router)
+    app.include_router(extras_routes.router)
     app.include_router(admin_routes.router)
 
     # Static + templates
@@ -89,6 +91,24 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health():
         return {"status": "ok", "service": "brainy-prospect"}
+
+    # PWA — manifest e service worker servidos no root
+    from fastapi.responses import FileResponse, Response
+
+    @app.get("/manifest.webmanifest")
+    def manifest():
+        f = STATIC_DIR / "manifest.webmanifest"
+        if f.exists():
+            return FileResponse(str(f), media_type="application/manifest+json")
+        return Response(status_code=404)
+
+    @app.get("/sw.js")
+    def service_worker():
+        f = STATIC_DIR / "sw.js"
+        if f.exists():
+            return FileResponse(str(f), media_type="application/javascript",
+                                headers={"Service-Worker-Allowed": "/"})
+        return Response(status_code=404)
 
     # ---- Páginas (server-rendered) ----
     @app.get("/", response_class=HTMLResponse)

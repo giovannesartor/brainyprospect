@@ -7,36 +7,48 @@
 
   <!-- ============ Sidebar (desktop) + drawer (mobile) ============ -->
   <aside
-    class="glass border-r border-white/5 p-5 flex-col gap-2 z-40
+    class="glass border-r p-4 flex-col gap-1 z-40
            md:flex md:w-64 md:static md:translate-x-0
            fixed inset-y-0 left-0 w-72 transform transition-transform duration-200"
     :class="sidebarOpen ? 'translate-x-0 flex' : '-translate-x-full hidden md:flex'">
-    <div class="flex items-center justify-between mb-6">
+
+    <div class="flex items-center justify-between mb-5">
       <div class="flex items-center gap-2">
         <span class="text-2xl">⚡</span>
-        <h1 class="text-lg font-bold">Brainy Prospect</h1>
+        <div>
+          <h1 class="text-lg font-bold leading-none">Brainy</h1>
+          <p class="text-[10px] text-muted">Prospect AI</p>
+        </div>
       </div>
       <button @click="sidebarOpen=false" class="md:hidden text-muted hover:text-white text-xl px-2">✕</button>
     </div>
 
     <template x-for="item in menu" :key="item.id">
       <button @click="setTab(item.id)"
+              :data-tour="item.id"
               :class="tab===item.id
                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
                  : 'text-muted hover:text-white hover:bg-white/5'"
               class="text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
         <span x-text="item.icon"></span>
         <span x-text="item.label" class="flex-1"></span>
-        <!-- Indicador de job rodando ao lado do menu Hunt/Jobs -->
         <span x-show="(item.id==='hunt' && isHuntRunning()) || (item.id==='jobs' && runningJobsCount()>0)"
               class="inline-flex items-center gap-1 text-[10px] text-indigo-300 pulse">
           <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
           <span x-text="item.id==='jobs' ? runningJobsCount() : ''"></span>
         </span>
+        <span x-show="item.id==='today' && (today.summary?.total_hot||0) > 0"
+              class="badge badge-warn" x-text="today.summary?.total_hot"></span>
       </button>
     </template>
 
-    <div class="mt-auto pt-4 border-t border-white/5 space-y-2">
+    <div class="mt-auto pt-3 border-t border-white/5 space-y-2">
+      <button @click="enablePush()" x-show="!pushOptIn"
+              class="w-full text-xs px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30">
+        🔔 Ativar notificações
+      </button>
+      <button @click="startTour()" class="w-full btn-ghost text-xs px-3 py-1.5 rounded-lg">🧭 Ver tour novamente</button>
+
       {% if user.role == 'admin' %}
       <a href="/admin" class="text-left block px-3 py-2 rounded-lg text-sm text-amber-300 hover:bg-amber-500/10 border border-amber-500/20">
         🛡 Painel Admin
@@ -44,7 +56,7 @@
       {% endif %}
       <div class="text-xs text-dim px-1 truncate" title="{{ user.email }}">{{ user.email }}</div>
       <div class="flex items-center gap-1">
-        <button @click="toggleTheme()" class="btn-ghost flex-1 text-xs px-2 py-1.5 rounded-lg flex items-center justify-center gap-1">
+        <button data-tour="theme" @click="toggleTheme()" class="btn-ghost flex-1 text-xs px-2 py-1.5 rounded-lg flex items-center justify-center gap-1">
           <span x-text="theme==='dark' ? '☀️' : '🌙'"></span>
           <span x-text="theme==='dark' ? 'Claro' : 'Escuro'"></span>
         </button>
@@ -53,14 +65,10 @@
     </div>
   </aside>
 
-  <!-- Backdrop mobile -->
-  <div x-show="sidebarOpen" x-cloak @click="sidebarOpen=false"
-       class="md:hidden fixed inset-0 bg-black/50 z-30"></div>
+  <div x-show="sidebarOpen" x-cloak @click="sidebarOpen=false" class="md:hidden fixed inset-0 bg-black/50 z-30"></div>
 
   <!-- ============ Main ============ -->
   <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
-
-    <!-- Topbar -->
     <header class="surface md:bg-transparent md:border-0 sticky top-0 z-20 flex items-center gap-3 px-4 py-3 md:px-6 md:py-5 border-b">
       <button @click="sidebarOpen=true" class="md:hidden btn-ghost p-2 rounded-lg" aria-label="Menu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -73,12 +81,12 @@
         <span class="badge badge-info" x-text="user.role"></span>
         <span class="text-xs text-muted truncate max-w-[160px]" x-text="user.full_name || user.email"></span>
       </div>
-      <button class="md:hidden btn-ghost p-2 rounded-lg" @click="toggleTheme()" :aria-label="theme==='dark'?'Modo claro':'Modo escuro'">
+      <button class="md:hidden btn-ghost p-2 rounded-lg" @click="toggleTheme()">
         <span x-text="theme==='dark' ? '☀️' : '🌙'"></span>
       </button>
     </header>
 
-    <!-- Banner de job em andamento (sempre visível enquanto roda) -->
+    <!-- Banner sticky de job em andamento -->
     <div x-show="huntJob && (huntJob.status==='running' || huntJob.status==='queued')" x-cloak
          class="mx-4 md:mx-6 mt-3 surface rounded-xl p-3 flex items-center gap-3 border-l-4 border-indigo-500">
       <div class="text-xl spin">⚙️</div>
@@ -97,9 +105,95 @@
 
     <div class="flex-1 overflow-y-auto scrollbar p-4 md:p-6">
 
-      <!-- ============ DASHBOARD ============ -->
+      <!-- ========================= TODAY ========================= -->
+      <section x-show="tab==='today'" x-cloak>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <div class="glass rounded-xl p-3 md:p-4">
+            <div class="text-[10px] md:text-xs text-muted uppercase">Quentes</div>
+            <div class="text-2xl md:text-3xl font-bold text-rose-400" x-text="today.summary?.total_hot ?? 0"></div>
+            <div class="text-[10px] text-dim">prontos para abordar</div>
+          </div>
+          <div class="glass rounded-xl p-3 md:p-4">
+            <div class="text-[10px] md:text-xs text-muted uppercase">No funil</div>
+            <div class="text-2xl md:text-3xl font-bold text-amber-400" x-text="today.summary?.in_pipeline ?? 0"></div>
+            <div class="text-[10px] text-dim">contatados→proposta</div>
+          </div>
+          <div class="glass rounded-xl p-3 md:p-4">
+            <div class="text-[10px] md:text-xs text-muted uppercase">Fechados</div>
+            <div class="text-2xl md:text-3xl font-bold text-emerald-400" x-text="today.summary?.won ?? 0"></div>
+            <div class="text-[10px] text-dim">total ganho</div>
+          </div>
+          <div class="glass rounded-xl p-3 md:p-4">
+            <div class="text-[10px] md:text-xs text-muted uppercase">Base total</div>
+            <div class="text-2xl md:text-3xl font-bold" x-text="today.summary?.total_leads ?? 0"></div>
+            <div class="text-[10px] text-dim">leads na conta</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="glass rounded-xl p-4 md:p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold flex items-center gap-2">🔥 Top 10 leads quentes</h3>
+              <button @click="setTab('leads')" class="text-xs text-indigo-400 hover:text-indigo-300">ver todos →</button>
+            </div>
+            <div class="space-y-2">
+              <template x-for="l in today.hot_leads" :key="l.id">
+                <div @click="openLead(l)" class="surface rounded-lg p-3 cursor-pointer flex items-center gap-3">
+                  <span class="badge" :class="l.score>=70?'badge-success':'badge-warn'" x-text="l.score"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium truncate" x-text="l.name"></div>
+                    <div class="text-xs text-dim truncate" x-text="(l.city||'') + ' · ' + (l.niche||'')"></div>
+                  </div>
+                  <div class="flex gap-1 text-xs">
+                    <span x-show="l.email">📧</span>
+                    <span x-show="l.whatsapp">💬</span>
+                    <span x-show="l.phone">📞</span>
+                  </div>
+                </div>
+              </template>
+              <template x-if="!today.hot_leads?.length">
+                <div class="text-center py-10">
+                  <div class="text-5xl mb-2 opacity-50">🌱</div>
+                  <p class="text-sm text-muted mb-3">Nenhum lead quente ainda.</p>
+                  <button @click="setTab('hunt')" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">🚀 Iniciar prospecção</button>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 md:p-5">
+            <h3 class="font-semibold mb-3">📨 Em contato</h3>
+            <div class="space-y-2">
+              <template x-for="l in today.in_contact" :key="l.id">
+                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2">
+                  <span class="truncate" x-text="l.name"></span>
+                  <span class="badge badge-info" x-text="l.priority"></span>
+                </div>
+              </template>
+              <template x-if="!today.in_contact?.length">
+                <p class="text-xs text-dim text-center py-4">Nenhum lead em conversa.</p>
+              </template>
+            </div>
+
+            <h3 class="font-semibold mt-5 mb-3">📥 Responderam</h3>
+            <div class="space-y-2">
+              <template x-for="l in today.responded" :key="l.id">
+                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2">
+                  <span class="truncate" x-text="l.name"></span>
+                  <button @click.stop="patchLead({status:'reuniao'}); l.status='reuniao'" class="text-xs text-emerald-400 hover:text-emerald-300">→ reunião</button>
+                </div>
+              </template>
+              <template x-if="!today.responded?.length">
+                <p class="text-xs text-dim text-center py-4">Sem respostas pendentes.</p>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= DASHBOARD ========================= -->
       <section x-show="tab==='dashboard'" x-cloak>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-5">
           <template x-for="kpi in kpis()" :key="kpi.label">
             <div class="glass rounded-xl p-3 md:p-4">
               <div class="text-[10px] md:text-xs text-muted uppercase tracking-wide" x-text="kpi.label"></div>
@@ -109,54 +203,30 @@
           </template>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">Pipeline</h3>
-            <div class="space-y-2">
-              <template x-for="(v,k) in (dash.pipeline||{})" :key="k">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-muted capitalize" x-text="k"></span>
-                  <span class="badge badge-muted" x-text="v"></span>
-                </div>
-              </template>
-              <div x-show="!Object.keys(dash.pipeline||{}).length" class="text-sm text-dim">Sem leads no pipeline ainda.</div>
-            </div>
+            <h3 class="font-semibold mb-3">📈 Leads nos últimos 14 dias</h3>
+            <div class="h-56 md:h-64"><canvas id="chartPerDay"></canvas></div>
           </div>
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">Top nichos</h3>
-            <div class="space-y-2">
-              <template x-for="row in (dash.stats?.top_niches||[])" :key="row[0]">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-muted truncate" x-text="row[0]"></span>
-                  <span class="badge badge-info" x-text="row[1]"></span>
-                </div>
-              </template>
-              <div x-show="!(dash.stats?.top_niches||[]).length" class="text-sm text-dim">Sem dados ainda. Faça uma prospecção.</div>
-            </div>
+            <h3 class="font-semibold mb-3">🧭 Pipeline atual</h3>
+            <div class="h-56 md:h-64"><canvas id="chartPipeline"></canvas></div>
           </div>
         </div>
 
-        <div class="glass rounded-xl p-4 md:p-5 mt-4">
-          <h3 class="font-semibold mb-3">Buscas recentes</h3>
-          <div class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-            <table>
-              <thead><tr><th>Input</th><th class="hidden sm:table-cell">Cidade</th><th>Total</th><th class="hidden md:table-cell">Quando</th></tr></thead>
-              <tbody>
-                <template x-for="s in (dash.recent_searches||[])" :key="s.id">
-                  <tr>
-                    <td class="truncate max-w-[160px] md:max-w-xs" x-text="s.input"></td>
-                    <td class="hidden sm:table-cell" x-text="s.city"></td>
-                    <td x-text="s.total"></td>
-                    <td class="hidden md:table-cell text-dim" x-text="fmtDate(s.created_at)"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="glass rounded-xl p-4 md:p-5">
+            <h3 class="font-semibold mb-3">🎯 Conversão por nicho</h3>
+            <div class="h-56 md:h-72"><canvas id="chartNiches"></canvas></div>
+          </div>
+          <div class="glass rounded-xl p-4 md:p-5">
+            <h3 class="font-semibold mb-3">📍 Top cidades</h3>
+            <div class="h-56 md:h-72"><canvas id="chartCities"></canvas></div>
           </div>
         </div>
       </section>
 
-      <!-- ============ HUNT ============ -->
+      <!-- ========================= HUNT ========================= -->
       <section x-show="tab==='hunt'" x-cloak>
         <div class="glass rounded-xl p-4 md:p-6 max-w-3xl">
           <h3 class="font-semibold mb-4">Nova prospecção</h3>
@@ -203,19 +273,14 @@
                 </select>
               </div>
             </div>
-
             <div class="flex flex-col sm:flex-row gap-2 pt-2">
-              <button @click="startHunt()"
-                      :disabled="submittingHunt || isHuntRunning()"
+              <button @click="startHunt()" :disabled="submittingHunt || isHuntRunning()"
                       class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
                 <span x-show="!isHuntRunning() && !submittingHunt">🚀 Iniciar prospecção</span>
                 <span x-show="submittingHunt" class="pulse">Enviando…</span>
-                <span x-show="isHuntRunning() && !submittingHunt" class="flex items-center gap-2">
-                  <span class="spin">⚙️</span> Em andamento…
-                </span>
+                <span x-show="isHuntRunning() && !submittingHunt" class="flex items-center gap-2"><span class="spin">⚙️</span> Em andamento…</span>
               </button>
-              <button @click="analyze()" :disabled="analyzing"
-                      class="btn-ghost w-full sm:w-auto px-4 py-2.5 rounded-lg text-sm">
+              <button @click="analyze()" :disabled="analyzing" class="btn-ghost w-full sm:w-auto px-4 py-2.5 rounded-lg text-sm">
                 <span x-show="!analyzing">Apenas analisar site</span>
                 <span x-show="analyzing" class="pulse">Analisando…</span>
               </button>
@@ -223,7 +288,6 @@
             <p class="text-xs text-dim">💡 A prospecção continua rodando em segundo plano se você navegar para outra aba ou fechar o painel.</p>
           </div>
 
-          <!-- Detalhe do progresso -->
           <div x-show="huntJob" x-cloak class="mt-6 p-4 rounded-lg surface">
             <div class="flex items-center justify-between mb-2 gap-2">
               <span class="text-sm font-medium truncate" x-text="huntJob.message || 'Iniciando…'"></span>
@@ -232,8 +296,7 @@
             <div class="w-full bg-black/10 dark:bg-white/5 rounded-full h-2">
               <div class="bg-indigo-500 h-2 rounded-full transition-all" :style="`width:${huntJob.progress}%`"></div>
             </div>
-            <div class="mt-2 text-xs"
-                 :class="huntJob.status==='done'?'text-emerald-500': huntJob.status==='error'?'text-rose-500':'text-muted'">
+            <div class="mt-2 text-xs" :class="huntJob.status==='done'?'text-emerald-500': huntJob.status==='error'?'text-rose-500':'text-muted'">
               <span x-text="'Status: ' + huntJob.status"></span>
               <span x-show="huntJob.error" x-text="' — ' + huntJob.error"></span>
               <span x-show="huntJob.result" x-text="' — ' + (huntJob.result?.total_leads || 0) + ' leads encontrados'"></span>
@@ -252,12 +315,11 @@
         </div>
       </section>
 
-      <!-- ============ LEADS ============ -->
+      <!-- ========================= LEADS ========================= -->
       <section x-show="tab==='leads'" x-cloak>
         <div class="glass rounded-xl p-3 md:p-4 mb-4">
           <div class="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-3">
-            <input type="text" placeholder="Buscar…" x-model="leadsFilters.text" @input.debounce.500ms="loadLeads()"
-                   class="px-3 py-2 text-sm col-span-2" />
+            <input type="text" placeholder="Buscar…" x-model="leadsFilters.text" @input.debounce.500ms="loadLeads()" class="px-3 py-2 text-sm col-span-2" />
             <input type="text" placeholder="Cidade" x-model="leadsFilters.city" @input.debounce.500ms="loadLeads()" class="px-3 py-2 text-sm" />
             <input type="text" placeholder="Nicho" x-model="leadsFilters.niche" @input.debounce.500ms="loadLeads()" class="px-3 py-2 text-sm" />
             <select x-model="leadsFilters.status" @change="loadLeads()" class="px-3 py-2 text-sm">
@@ -275,7 +337,6 @@
           </div>
         </div>
 
-        <!-- Mobile: cards -->
         <div class="md:hidden space-y-2">
           <template x-for="l in leads" :key="l.id">
             <div @click="openLead(l)" class="glass rounded-xl p-3 cursor-pointer">
@@ -289,18 +350,21 @@
               <div class="flex items-center justify-between mt-2 text-xs text-muted">
                 <span x-text="l.city + (l.state ? '/'+l.state : '')"></span>
                 <div class="flex gap-1">
-                  <span x-show="l.email">📧</span>
-                  <span x-show="l.whatsapp">💬</span>
-                  <span x-show="l.phone">📞</span>
-                  <span x-show="l.instagram">📸</span>
+                  <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span>
+                  <span x-show="l.phone">📞</span><span x-show="l.instagram">📸</span>
                 </div>
               </div>
             </div>
           </template>
-          <div x-show="!leads.length" class="text-center text-dim py-8 text-sm">Nenhum lead. Inicie uma prospecção.</div>
+          <template x-if="!leads.length">
+            <div class="glass rounded-xl p-10 text-center">
+              <div class="text-5xl mb-2 opacity-50">🔍</div>
+              <p class="text-sm text-muted mb-3">Nenhum lead com esses filtros.</p>
+              <button @click="setTab('hunt')" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">Prospectar agora</button>
+            </div>
+          </template>
         </div>
 
-        <!-- Desktop: tabela -->
         <div class="hidden md:block glass rounded-xl overflow-hidden">
           <div class="overflow-x-auto">
             <table>
@@ -315,21 +379,176 @@
                     <td><span class="badge" :class="l.priority==='maxima'?'badge-danger':l.priority==='alta'?'badge-warn':'badge-muted'" x-text="l.priority"></span></td>
                     <td><span class="badge" :class="l.status==='novo'?'badge-info':l.status==='fechado'?'badge-success':'badge-muted'" x-text="l.status"></span></td>
                     <td>
-                      <span x-show="l.email" title="Email">📧</span>
-                      <span x-show="l.whatsapp" title="WhatsApp">💬</span>
-                      <span x-show="l.phone" title="Telefone">📞</span>
-                      <span x-show="l.instagram" title="Instagram">📸</span>
+                      <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span>
+                      <span x-show="l.phone">📞</span><span x-show="l.instagram">📸</span>
                     </td>
                   </tr>
                 </template>
-                <tr x-show="!leads.length"><td colspan="7" class="text-center text-dim py-8">Nenhum lead. Inicie uma prospecção.</td></tr>
+                <tr x-show="!leads.length"><td colspan="7" class="text-center text-dim py-12">
+                  <div class="text-5xl mb-2 opacity-50">🔍</div>
+                  Nenhum lead. <button @click="setTab('hunt')" class="text-indigo-400 hover:underline">Iniciar prospecção</button>.
+                </td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ============ CAMPANHAS ============ -->
+      <!-- ========================= PIPELINE (Kanban) ========================= -->
+      <section x-show="tab==='pipeline'" x-cloak>
+        <p class="text-sm text-muted mb-3">Arraste os cards entre as colunas para mudar o status. Mudanças salvam automaticamente.</p>
+        <div class="overflow-x-auto pb-4">
+          <div class="flex gap-3 min-w-max">
+            <template x-for="col in pipelineCols" :key="col">
+              <div class="glass rounded-xl p-3 w-72 flex-shrink-0">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-sm capitalize" x-text="statusLabel(col)"></h4>
+                  <span class="badge badge-muted" x-text="(pipelineLeads[col]||[]).length"></span>
+                </div>
+                <div :id="'kanban-col-'+col" :data-col="col" class="space-y-2 min-h-[200px]">
+                  <template x-for="l in (pipelineLeads[col]||[])" :key="l.id">
+                    <div :data-id="l.id" @click="openLead(l)"
+                         class="surface rounded-lg p-3 text-sm cursor-grab active:cursor-grabbing hover:border-indigo-500/50 transition">
+                      <div class="font-medium truncate" x-text="l.name"></div>
+                      <div class="text-xs text-dim truncate mt-0.5" x-text="(l.city||'') + ' · ' + (l.niche||'')"></div>
+                      <div class="flex items-center justify-between mt-2">
+                        <span class="badge" :class="l.score>=70?'badge-success':l.score>=40?'badge-warn':'badge-muted'" x-text="l.score"></span>
+                        <div class="flex gap-1 text-xs">
+                          <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span><span x-show="l.phone">📞</span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="!(pipelineLeads[col]||[]).length">
+                    <div class="text-xs text-dim text-center py-6 border-2 border-dashed border-white/5 rounded-lg">
+                      arraste para cá
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= LOOKALIKE ========================= -->
+      <section x-show="tab==='lookalike'" x-cloak>
+        <div class="glass rounded-xl p-4 md:p-6 max-w-3xl">
+          <h3 class="font-semibold mb-1">🪞 Encontre empresas parecidas</h3>
+          <p class="text-xs text-muted mb-4">Pegue um cliente que fechou (ou um site/descrição) e a IA monta uma nova prospecção atrás de empresas com o mesmo perfil.</p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs text-muted mb-1.5">Site ou descrição do cliente referência</label>
+              <input type="text" x-model="lookalike.source_input" class="w-full px-3 py-2.5 text-sm" placeholder="https://cliente-ideal.com.br" />
+              <label class="flex items-center gap-2 mt-2 text-xs text-muted">
+                <input type="checkbox" x-model="lookalike.is_website" /> É um site
+              </label>
+              <p class="text-[11px] text-dim mt-1" x-show="lookalike.lead_id">Usando lead #<span x-text="lookalike.lead_id"></span> como referência. <button @click="lookalike.lead_id=null" class="text-indigo-400 hover:underline">limpar</button></p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-muted mb-1.5">Cidade alvo (opcional)</label>
+                <input type="text" x-model="lookalike.city" class="w-full px-3 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs text-muted mb-1.5">UF (opcional)</label>
+                <input type="text" x-model="lookalike.state" class="w-full px-3 py-2.5 text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-muted mb-1.5">Resultados/nicho</label>
+                <input type="number" min="1" max="40" x-model.number="lookalike.max_per_niche" class="w-full px-3 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs text-muted mb-1.5">Modo</label>
+                <select x-model="lookalike.mode" class="w-full px-3 py-2.5 text-sm">
+                  <option value="direct_sale">Venda direta</option>
+                  <option value="partners">Parceiros</option>
+                  <option value="both">Ambos</option>
+                </select>
+              </div>
+            </div>
+            <button @click="startLookalike()" class="btn-primary px-5 py-2.5 rounded-lg font-semibold">🪞 Buscar similares</button>
+            <p class="text-xs text-dim">💡 Dica: abra qualquer lead e clique em <strong>"Achar similares"</strong> no painel para preencher automaticamente.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= OBJECTIONS ========================= -->
+      <section x-show="tab==='objections'" x-cloak>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="glass rounded-xl p-4 md:p-6">
+            <h3 class="font-semibold mb-1">🛡 Quebra-objeções com IA</h3>
+            <p class="text-xs text-muted mb-4">Cole a objeção que recebeu — a IA gera 3 abordagens (curta, consultiva, com prova social).</p>
+            <div class="space-y-3">
+              <textarea rows="4" x-model="objection.text" class="w-full px-3 py-2.5 text-sm" placeholder="Ex: 'Tá caro', 'Já uso outra ferramenta', 'Vou pensar', 'Não é prioridade'"></textarea>
+              <input type="text" x-model="objection.context" class="w-full px-3 py-2.5 text-sm" placeholder="Contexto extra (opcional)" />
+              <button @click="runObjection()" :disabled="objectionLoading" class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold disabled:opacity-50">
+                <span x-show="!objectionLoading">✨ Gerar respostas</span>
+                <span x-show="objectionLoading" class="pulse">Pensando…</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 md:p-6">
+            <h3 class="font-semibold mb-3">Respostas sugeridas</h3>
+            <template x-if="!objectionResult">
+              <div class="text-center py-12">
+                <div class="text-5xl mb-2 opacity-50">💬</div>
+                <p class="text-sm text-muted">Cole uma objeção ao lado para ver as sugestões aqui.</p>
+              </div>
+            </template>
+            <div class="space-y-3" x-show="objectionResult">
+              <template x-for="(r, i) in (objectionResult?.responses || [])" :key="i">
+                <div class="surface rounded-lg p-3">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="badge badge-info capitalize" x-text="r.strategy"></span>
+                    <button @click="copyText(r.text)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+                  </div>
+                  <p class="text-sm whitespace-pre-line" x-text="r.text"></p>
+                </div>
+              </template>
+              <div x-show="objectionResult?.tip" class="text-xs text-amber-400 surface rounded-lg p-3">
+                💡 <span x-text="objectionResult?.tip"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= BRAINY CHAT ========================= -->
+      <section x-show="tab==='chat'" x-cloak>
+        <div class="glass rounded-xl flex flex-col h-[70vh] max-w-3xl">
+          <div class="flex-1 overflow-y-auto scrollbar p-4 space-y-3">
+            <template x-if="!chat.history.length">
+              <div class="text-center py-12">
+                <div class="text-5xl mb-2 opacity-50">💬</div>
+                <p class="text-sm text-muted mb-3">Pergunte qualquer coisa sobre seus leads, estratégia ou abordagem.</p>
+                <div class="flex flex-wrap gap-2 justify-center">
+                  <button @click="chat.input='Quais leads devo abordar primeiro hoje?'; sendChat()" class="btn-ghost text-xs px-3 py-1.5 rounded-full">Quais abordar primeiro?</button>
+                  <button @click="chat.input='Sugira mensagens de follow-up para leads sem resposta há 3 dias'; sendChat()" class="btn-ghost text-xs px-3 py-1.5 rounded-full">Follow-up</button>
+                  <button @click="chat.input='Como melhorar minha taxa de conversão?'; sendChat()" class="btn-ghost text-xs px-3 py-1.5 rounded-full">Conversão</button>
+                </div>
+              </div>
+            </template>
+            <template x-for="(m, i) in chat.history" :key="i">
+              <div :class="m.role==='user' ? 'ml-auto bg-indigo-600/20 border-indigo-500/30' : 'mr-auto surface'"
+                   class="max-w-[85%] rounded-2xl px-4 py-2.5 border text-sm whitespace-pre-line">
+                <span x-text="m.content"></span>
+              </div>
+            </template>
+            <div x-show="chat.loading" class="mr-auto surface rounded-2xl px-4 py-2.5 text-sm pulse">Brainy está pensando…</div>
+          </div>
+          <div class="border-t border-white/5 p-3 flex gap-2">
+            <input type="text" x-model="chat.input" @keydown.enter="sendChat()"
+                   class="flex-1 px-3 py-2.5 text-sm" placeholder="Pergunte algo…" />
+            <button @click="sendChat()" :disabled="chat.loading" class="btn-primary px-4 py-2.5 rounded-lg font-semibold disabled:opacity-50">Enviar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= CAMPANHAS ========================= -->
       <section x-show="tab==='campaigns'" x-cloak>
         <div class="glass rounded-xl p-3 md:p-4 mb-4 flex flex-col sm:flex-row gap-2">
           <input type="text" x-model="newCampaign.name" placeholder="Nome da campanha" class="px-3 py-2 text-sm flex-1" />
@@ -349,11 +568,16 @@
               <span class="badge badge-info mt-2 inline-block" x-text="c.target_mode"></span>
             </div>
           </template>
-          <div x-show="!campaigns.length" class="text-sm text-dim col-span-full text-center py-8">Sem campanhas. Crie a primeira acima.</div>
+          <template x-if="!campaigns.length">
+            <div class="glass rounded-xl p-10 text-center col-span-full">
+              <div class="text-5xl mb-2 opacity-50">🎯</div>
+              <p class="text-sm text-muted">Nenhuma campanha ainda. Crie a primeira acima.</p>
+            </div>
+          </template>
         </div>
       </section>
 
-      <!-- ============ HISTÓRICO ============ -->
+      <!-- ========================= HISTÓRICO ========================= -->
       <section x-show="tab==='history'" x-cloak>
         <div class="glass rounded-xl overflow-hidden">
           <div class="overflow-x-auto">
@@ -369,17 +593,19 @@
                     <td class="hidden md:table-cell text-dim" x-text="fmtDate(s.created_at)"></td>
                   </tr>
                 </template>
-                <tr x-show="!searches.length"><td colspan="5" class="text-center text-dim py-8">Sem buscas ainda.</td></tr>
+                <tr x-show="!searches.length"><td colspan="5" class="text-center text-dim py-12">
+                  <div class="text-5xl mb-2 opacity-50">🕘</div>Sem buscas ainda.
+                </td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ============ JOBS ============ -->
+      <!-- ========================= JOBS ========================= -->
       <section x-show="tab==='jobs'" x-cloak>
         <div class="flex items-center justify-between mb-3">
-          <p class="text-sm text-muted">Tarefas de prospecção rodando ou recém-finalizadas. <strong x-text="runningJobsCount()"></strong> ativa(s).</p>
+          <p class="text-sm text-muted">Tarefas rodando ou recém-finalizadas. <strong x-text="runningJobsCount()"></strong> ativa(s).</p>
           <button @click="loadJobs()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">↻ Atualizar</button>
         </div>
         <div class="glass rounded-xl overflow-hidden">
@@ -403,7 +629,9 @@
                     <td class="hidden md:table-cell text-muted text-xs" x-text="j.message || j.error"></td>
                   </tr>
                 </template>
-                <tr x-show="!jobs.length"><td colspan="5" class="text-center text-dim py-8">Nenhum job no momento.</td></tr>
+                <tr x-show="!jobs.length"><td colspan="5" class="text-center text-dim py-12">
+                  <div class="text-5xl mb-2 opacity-50">⚙️</div>Nenhum job no momento.
+                </td></tr>
               </tbody>
             </table>
           </div>
@@ -413,9 +641,9 @@
     </div>
   </main>
 
-  <!-- ============ Lead drawer (mobile = bottom sheet, desktop = side) ============ -->
+  <!-- ============ Lead drawer ============ -->
   <div x-show="leadOpen" x-cloak class="fixed inset-0 bg-black/60 z-40" @click="leadOpen=false"></div>
-  <aside x-show="leadOpen" x-cloak x-transition.translate
+  <aside x-show="leadOpen" x-cloak
          class="fixed z-50 glass overflow-y-auto scrollbar
                 inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t
                 md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-full md:max-w-xl md:rounded-none md:rounded-l-2xl md:border-l md:border-t-0
@@ -432,6 +660,13 @@
       <div class="grid grid-cols-2 gap-3 mb-4">
         <div class="surface p-3 rounded-lg"><div class="text-xs text-dim">Score</div><div class="text-2xl font-bold" x-text="currentLead?.score"></div></div>
         <div class="surface p-3 rounded-lg"><div class="text-xs text-dim">Prioridade</div><div class="text-2xl font-bold capitalize" x-text="currentLead?.priority"></div></div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button @click="useAsLookalike()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">🪞 Achar similares</button>
+        <button @click="objection.lead_id=currentLead.id; tab='objections'; leadOpen=false"
+                class="btn-ghost text-xs px-3 py-1.5 rounded-lg">🛡 Objeções</button>
+        <button @click="deleteLead()" class="text-xs px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 ml-auto">🗑 Excluir</button>
       </div>
 
       <div class="space-y-2 text-sm mb-4">
@@ -452,11 +687,17 @@
         <p class="text-sm text-muted whitespace-pre-line" x-text="currentLead?.pitch"></p>
       </div>
       <div class="mb-4" x-show="currentLead?.message_a">
-        <h4 class="font-semibold mb-1">Mensagem A</h4>
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-semibold">Mensagem A</h4>
+          <button @click="copyText(currentLead?.message_a)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+        </div>
         <pre class="text-xs md:text-sm text-muted whitespace-pre-wrap surface p-3 rounded-lg" x-text="currentLead?.message_a"></pre>
       </div>
       <div class="mb-4" x-show="currentLead?.message_b">
-        <h4 class="font-semibold mb-1">Mensagem B</h4>
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-semibold">Mensagem B</h4>
+          <button @click="copyText(currentLead?.message_b)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+        </div>
         <pre class="text-xs md:text-sm text-muted whitespace-pre-wrap surface p-3 rounded-lg" x-text="currentLead?.message_b"></pre>
       </div>
 
