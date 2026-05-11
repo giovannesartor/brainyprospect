@@ -12,55 +12,59 @@
            fixed inset-y-0 left-0 w-72 transform transition-transform duration-200"
     :class="sidebarOpen ? 'translate-x-0 flex' : '-translate-x-full hidden md:flex'">
 
-    <div class="flex items-center justify-between mb-5">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">⚡</span>
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2.5">
+        <span class="brand-mark"><svg class="icon icon-lg"><use href="#i-bolt"/></svg></span>
         <div>
-          <h1 class="text-lg font-bold leading-none">Brainy</h1>
-          <p class="text-[10px] text-muted">Prospect AI</p>
+          <h1 class="text-base font-bold leading-none tracking-tight">Brainy</h1>
+          <p class="text-[10px] text-muted mt-0.5 uppercase tracking-wider">Prospect AI</p>
         </div>
       </div>
-      <button @click="sidebarOpen=false" class="md:hidden text-muted hover:text-white text-xl px-2">✕</button>
+      <button @click="sidebarOpen=false" class="md:hidden text-muted hover:text-white p-1.5 rounded-lg" aria-label="Fechar">
+        <svg class="icon icon-lg"><use href="#i-close"/></svg>
+      </button>
     </div>
 
-    <template x-for="item in menu" :key="item.id">
-      <button @click="setTab(item.id)"
-              :data-tour="item.id"
-              :class="tab===item.id
-                 ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                 : 'text-muted hover:text-white hover:bg-white/5'"
-              class="text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
-        <span x-text="item.icon"></span>
-        <span x-text="item.label" class="flex-1"></span>
-        <span x-show="(item.id==='hunt' && isHuntRunning()) || (item.id==='jobs' && runningJobsCount()>0)"
-              class="inline-flex items-center gap-1 text-[10px] text-indigo-300 pulse">
-          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-          <span x-text="item.id==='jobs' ? runningJobsCount() : ''"></span>
-        </span>
-        <span x-show="item.id==='today' && (today.summary?.total_hot||0) > 0"
-              class="badge badge-warn" x-text="today.summary?.total_hot"></span>
-      </button>
-    </template>
+    <nav class="space-y-0.5">
+      <template x-for="item in menu" :key="item.id">
+        <button @click="setTab(item.id)" :data-tour="item.id"
+                :class="tab===item.id ? 'nav-item active' : 'nav-item'">
+          <svg class="icon-mini"><use :href="'#i-'+item.icon"/></svg>
+          <span x-text="item.label" class="flex-1"></span>
+          <span x-show="(item.id==='hunt' && isHuntRunning()) || (item.id==='jobs' && runningJobsCount()>0)"
+                class="inline-flex items-center gap-1 text-[10px] text-indigo-400 pulse">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+            <span x-text="item.id==='jobs' ? runningJobsCount() : ''"></span>
+          </span>
+          <span x-show="item.id==='today' && (today.summary?.total_hot||0) > 0"
+                class="badge badge-warn" x-text="today.summary?.total_hot"></span>
+        </button>
+      </template>
+    </nav>
 
-    <div class="mt-auto pt-3 border-t border-white/5 space-y-2">
+    <div class="mt-auto pt-4 border-t border-soft space-y-2" style="border-color: var(--border-soft)">
       <button @click="enablePush()" x-show="!pushOptIn"
-              class="w-full text-xs px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30">
-        🔔 Ativar notificações
+              class="w-full text-xs px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center gap-2">
+        <svg class="icon"><use href="#i-bell"/></svg>
+        Ativar notificações
       </button>
-      <button @click="startTour()" class="w-full btn-ghost text-xs px-3 py-1.5 rounded-lg">🧭 Ver tour novamente</button>
+      <button @click="startTour()" class="w-full btn-ghost text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-2">
+        <svg class="icon"><use href="#i-compass"/></svg> Ver tour novamente
+      </button>
 
       {% if user.role == 'admin' %}
-      <a href="/admin" class="text-left block px-3 py-2 rounded-lg text-sm text-amber-300 hover:bg-amber-500/10 border border-amber-500/20">
-        🛡 Painel Admin
+      <a href="/admin" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-amber-500 hover:bg-amber-500/10 border border-amber-500/20">
+        <svg class="icon"><use href="#i-shield"/></svg> Painel Admin
       </a>
       {% endif %}
-      <div class="text-xs text-dim px-1 truncate" title="{{ user.email }}">{{ user.email }}</div>
+      <div class="text-[11px] text-dim px-1 truncate pt-1" title="{{ user.email }}">{{ user.email }}</div>
       <div class="flex items-center gap-1">
-        <button data-tour="theme" @click="toggleTheme()" class="btn-ghost flex-1 text-xs px-2 py-1.5 rounded-lg flex items-center justify-center gap-1">
-          <span x-text="theme==='dark' ? '☀️' : '🌙'"></span>
+        <button data-tour="theme" @click="toggleTheme()" class="btn-ghost flex-1 text-xs px-2 py-2 rounded-lg flex items-center justify-center gap-1.5">
+          <svg class="icon" x-show="theme==='dark'"><use href="#i-sun"/></svg>
+          <svg class="icon" x-show="theme!=='dark'"><use href="#i-moon"/></svg>
           <span x-text="theme==='dark' ? 'Claro' : 'Escuro'"></span>
         </button>
-        <button @click="logout()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Sair</button>
+        <button @click="logout()" class="btn-ghost text-xs px-3 py-2 rounded-lg">Sair</button>
       </div>
     </div>
   </aside>
@@ -71,7 +75,7 @@
   <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
     <header class="surface md:bg-transparent md:border-0 sticky top-0 z-20 flex items-center gap-3 px-4 py-3 md:px-6 md:py-5 border-b">
       <button @click="sidebarOpen=true" class="md:hidden btn-ghost p-2 rounded-lg" aria-label="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg class="icon icon-lg"><use href="#i-menu"/></svg>
       </button>
       <div class="flex-1 min-w-0">
         <h2 class="text-lg md:text-2xl font-bold truncate" x-text="currentTitle()"></h2>
@@ -81,15 +85,16 @@
         <span class="badge badge-info" x-text="user.role"></span>
         <span class="text-xs text-muted truncate max-w-[160px]" x-text="user.full_name || user.email"></span>
       </div>
-      <button class="md:hidden btn-ghost p-2 rounded-lg" @click="toggleTheme()">
-        <span x-text="theme==='dark' ? '☀️' : '🌙'"></span>
+      <button class="md:hidden btn-ghost p-2 rounded-lg" @click="toggleTheme()" aria-label="Tema">
+        <svg class="icon" x-show="theme==='dark'"><use href="#i-sun"/></svg>
+        <svg class="icon" x-show="theme!=='dark'"><use href="#i-moon"/></svg>
       </button>
     </header>
 
     <!-- Banner sticky de job em andamento -->
     <div x-show="huntJob && (huntJob.status==='running' || huntJob.status==='queued')" x-cloak
          class="mx-4 md:mx-6 mt-3 surface rounded-xl p-3 flex items-center gap-3 border-l-4 border-indigo-500">
-      <div class="text-xl spin">⚙️</div>
+      <div class="icon-box"><svg class="icon spin"><use href="#i-cog"/></svg></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between gap-2 text-xs md:text-sm">
           <span class="font-medium truncate" x-text="huntJob?.message || 'Prospectando…'"></span>
@@ -100,7 +105,9 @@
         </div>
       </div>
       <button @click="setTab('hunt')" class="btn-ghost text-xs px-2 py-1 rounded-lg whitespace-nowrap hidden sm:inline-block">Ver</button>
-      <button @click="cancelTrackedHunt()" class="text-dim hover:text-rose-400 text-lg" title="Esconder (job continua)">✕</button>
+      <button @click="cancelTrackedHunt()" class="text-dim hover:text-rose-400 p-1" title="Esconder (job continua)">
+        <svg class="icon"><use href="#i-close"/></svg>
+      </button>
     </div>
 
     <div class="flex-1 overflow-y-auto scrollbar p-4 md:p-6">
@@ -108,64 +115,70 @@
       <!-- ========================= TODAY ========================= -->
       <section x-show="tab==='today'" x-cloak>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          <div class="glass rounded-xl p-3 md:p-4">
-            <div class="text-[10px] md:text-xs text-muted uppercase">Quentes</div>
-            <div class="text-2xl md:text-3xl font-bold text-rose-400" x-text="today.summary?.total_hot ?? 0"></div>
-            <div class="text-[10px] text-dim">prontos para abordar</div>
+          <div class="kpi">
+            <div class="kpi-icon" style="background:rgba(244,63,94,.12);color:#f43f5e"><svg class="icon"><use href="#i-fire"/></svg></div>
+            <div class="kpi-label">Quentes</div>
+            <div class="kpi-value text-rose-500" x-text="today.summary?.total_hot ?? 0"></div>
+            <div class="kpi-hint">prontos para abordar</div>
           </div>
-          <div class="glass rounded-xl p-3 md:p-4">
-            <div class="text-[10px] md:text-xs text-muted uppercase">No funil</div>
-            <div class="text-2xl md:text-3xl font-bold text-amber-400" x-text="today.summary?.in_pipeline ?? 0"></div>
-            <div class="text-[10px] text-dim">contatados→proposta</div>
+          <div class="kpi">
+            <div class="kpi-icon" style="background:rgba(245,158,11,.12);color:#f59e0b"><svg class="icon"><use href="#i-trend-up"/></svg></div>
+            <div class="kpi-label">No funil</div>
+            <div class="kpi-value text-amber-500" x-text="today.summary?.in_pipeline ?? 0"></div>
+            <div class="kpi-hint">contatados → proposta</div>
           </div>
-          <div class="glass rounded-xl p-3 md:p-4">
-            <div class="text-[10px] md:text-xs text-muted uppercase">Fechados</div>
-            <div class="text-2xl md:text-3xl font-bold text-emerald-400" x-text="today.summary?.won ?? 0"></div>
-            <div class="text-[10px] text-dim">total ganho</div>
+          <div class="kpi">
+            <div class="kpi-icon" style="background:rgba(16,185,129,.12);color:#10b981"><svg class="icon"><use href="#i-target"/></svg></div>
+            <div class="kpi-label">Fechados</div>
+            <div class="kpi-value text-emerald-500" x-text="today.summary?.won ?? 0"></div>
+            <div class="kpi-hint">total ganho</div>
           </div>
-          <div class="glass rounded-xl p-3 md:p-4">
-            <div class="text-[10px] md:text-xs text-muted uppercase">Base total</div>
-            <div class="text-2xl md:text-3xl font-bold" x-text="today.summary?.total_leads ?? 0"></div>
-            <div class="text-[10px] text-dim">leads na conta</div>
+          <div class="kpi">
+            <div class="kpi-icon"><svg class="icon"><use href="#i-users"/></svg></div>
+            <div class="kpi-label">Base total</div>
+            <div class="kpi-value" x-text="today.summary?.total_leads ?? 0"></div>
+            <div class="kpi-hint">leads na conta</div>
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="glass rounded-xl p-4 md:p-5">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold flex items-center gap-2">🔥 Top 10 leads quentes</h3>
-              <button @click="setTab('leads')" class="text-xs text-indigo-400 hover:text-indigo-300">ver todos →</button>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title"><span class="icon-box" style="background:rgba(244,63,94,.12);color:#f43f5e;border-color:rgba(244,63,94,.3)"><svg class="icon"><use href="#i-fire"/></svg></span>Top 10 leads quentes</h3>
+              <button @click="setTab('leads')" class="text-xs text-indigo-500 hover:text-indigo-400 inline-flex items-center gap-1">ver todos <svg class="icon-sm"><use href="#i-arrow-right"/></svg></button>
             </div>
             <div class="space-y-2">
               <template x-for="l in today.hot_leads" :key="l.id">
-                <div @click="openLead(l)" class="surface rounded-lg p-3 cursor-pointer flex items-center gap-3">
+                <div @click="openLead(l)" class="surface rounded-lg p-3 cursor-pointer flex items-center gap-3 hover:border-indigo-500/40 transition">
                   <span class="badge" :class="l.score>=70?'badge-success':'badge-warn'" x-text="l.score"></span>
                   <div class="min-w-0 flex-1">
                     <div class="font-medium truncate" x-text="l.name"></div>
                     <div class="text-xs text-dim truncate" x-text="(l.city||'') + ' · ' + (l.niche||'')"></div>
                   </div>
-                  <div class="flex gap-1 text-xs">
-                    <span x-show="l.email">📧</span>
-                    <span x-show="l.whatsapp">💬</span>
-                    <span x-show="l.phone">📞</span>
+                  <div class="flex gap-1.5 text-dim">
+                    <svg class="icon" x-show="l.email" title="Email"><use href="#i-mail"/></svg>
+                    <svg class="icon" x-show="l.whatsapp" title="WhatsApp"><use href="#i-msg"/></svg>
+                    <svg class="icon" x-show="l.phone" title="Telefone"><use href="#i-phone"/></svg>
                   </div>
                 </div>
               </template>
               <template x-if="!today.hot_leads?.length">
-                <div class="text-center py-10">
-                  <div class="text-5xl mb-2 opacity-50">🌱</div>
-                  <p class="text-sm text-muted mb-3">Nenhum lead quente ainda.</p>
-                  <button @click="setTab('hunt')" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">🚀 Iniciar prospecção</button>
+                <div class="empty-state">
+                  <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-seed"/></svg></div>
+                  <p class="mb-3">Nenhum lead quente ainda.</p>
+                  <button @click="setTab('hunt')" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-2">
+                    <svg class="icon"><use href="#i-rocket"/></svg> Iniciar prospecção
+                  </button>
                 </div>
               </template>
             </div>
           </div>
 
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">📨 Em contato</h3>
+            <h3 class="section-title mb-4"><span class="icon-box"><svg class="icon"><use href="#i-chat"/></svg></span>Em contato</h3>
             <div class="space-y-2">
               <template x-for="l in today.in_contact" :key="l.id">
-                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2">
+                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2 hover:border-indigo-500/40 transition">
                   <span class="truncate" x-text="l.name"></span>
                   <span class="badge badge-info" x-text="l.priority"></span>
                 </div>
@@ -175,12 +188,14 @@
               </template>
             </div>
 
-            <h3 class="font-semibold mt-5 mb-3">📥 Responderam</h3>
+            <h3 class="section-title mt-6 mb-4"><span class="icon-box" style="background:rgba(16,185,129,.12);color:#10b981;border-color:rgba(16,185,129,.3)"><svg class="icon"><use href="#i-inbox"/></svg></span>Responderam</h3>
             <div class="space-y-2">
               <template x-for="l in today.responded" :key="l.id">
-                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2">
+                <div @click="openLead(l)" class="surface rounded-lg p-2.5 text-sm cursor-pointer flex justify-between items-center gap-2 hover:border-indigo-500/40 transition">
                   <span class="truncate" x-text="l.name"></span>
-                  <button @click.stop="patchLead({status:'reuniao'}); l.status='reuniao'" class="text-xs text-emerald-400 hover:text-emerald-300">→ reunião</button>
+                  <button @click.stop="patchLead({status:'reuniao'}); l.status='reuniao'" class="text-xs text-emerald-500 hover:text-emerald-400 inline-flex items-center gap-1">
+                    <svg class="icon-sm"><use href="#i-arrow-right"/></svg> reunião
+                  </button>
                 </div>
               </template>
               <template x-if="!today.responded?.length">
@@ -195,32 +210,33 @@
       <section x-show="tab==='dashboard'" x-cloak>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-5">
           <template x-for="kpi in kpis()" :key="kpi.label">
-            <div class="glass rounded-xl p-3 md:p-4">
-              <div class="text-[10px] md:text-xs text-muted uppercase tracking-wide" x-text="kpi.label"></div>
-              <div class="text-xl md:text-2xl font-bold mt-1" x-text="kpi.value"></div>
-              <div class="text-[10px] md:text-xs text-dim mt-0.5" x-text="kpi.hint"></div>
+            <div class="kpi">
+              <div class="kpi-icon"><svg class="icon"><use href="#i-trend-up"/></svg></div>
+              <div class="kpi-label" x-text="kpi.label"></div>
+              <div class="kpi-value" x-text="kpi.value"></div>
+              <div class="kpi-hint" x-text="kpi.hint"></div>
             </div>
           </template>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">📈 Leads nos últimos 14 dias</h3>
+            <h3 class="section-title mb-4"><span class="icon-box"><svg class="icon"><use href="#i-chart"/></svg></span>Leads nos últimos 14 dias</h3>
             <div class="h-56 md:h-64"><canvas id="chartPerDay"></canvas></div>
           </div>
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">🧭 Pipeline atual</h3>
+            <h3 class="section-title mb-4"><span class="icon-box"><svg class="icon"><use href="#i-compass"/></svg></span>Pipeline atual</h3>
             <div class="h-56 md:h-64"><canvas id="chartPipeline"></canvas></div>
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">🎯 Conversão por nicho</h3>
+            <h3 class="section-title mb-4"><span class="icon-box"><svg class="icon"><use href="#i-target"/></svg></span>Conversão por nicho</h3>
             <div class="h-56 md:h-72"><canvas id="chartNiches"></canvas></div>
           </div>
           <div class="glass rounded-xl p-4 md:p-5">
-            <h3 class="font-semibold mb-3">📍 Top cidades</h3>
+            <h3 class="section-title mb-4"><span class="icon-box"><svg class="icon"><use href="#i-pin"/></svg></span>Top cidades</h3>
             <div class="h-56 md:h-72"><canvas id="chartCities"></canvas></div>
           </div>
         </div>
@@ -276,16 +292,18 @@
             <div class="flex flex-col sm:flex-row gap-2 pt-2">
               <button @click="startHunt()" :disabled="submittingHunt || isHuntRunning()"
                       class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
-                <span x-show="!isHuntRunning() && !submittingHunt">🚀 Iniciar prospecção</span>
+                <template x-if="!isHuntRunning() && !submittingHunt">
+                  <span class="flex items-center gap-2"><svg class="icon"><use href="#i-rocket"/></svg> Iniciar prospecção</span>
+                </template>
                 <span x-show="submittingHunt" class="pulse">Enviando…</span>
-                <span x-show="isHuntRunning() && !submittingHunt" class="flex items-center gap-2"><span class="spin">⚙️</span> Em andamento…</span>
+                <span x-show="isHuntRunning() && !submittingHunt" class="flex items-center gap-2"><svg class="icon spin"><use href="#i-cog"/></svg> Em andamento…</span>
               </button>
               <button @click="analyze()" :disabled="analyzing" class="btn-ghost w-full sm:w-auto px-4 py-2.5 rounded-lg text-sm">
                 <span x-show="!analyzing">Apenas analisar site</span>
                 <span x-show="analyzing" class="pulse">Analisando…</span>
               </button>
             </div>
-            <p class="text-xs text-dim">💡 A prospecção continua rodando em segundo plano se você navegar para outra aba ou fechar o painel.</p>
+            <p class="text-xs text-dim flex items-start gap-1.5"><svg class="icon mt-0.5" style="color:var(--accent)"><use href="#i-sparkle"/></svg> A prospecção continua rodando em segundo plano se você navegar para outra aba ou fechar o painel.</p>
           </div>
 
           <div x-show="huntJob" x-cloak class="mt-6 p-4 rounded-lg surface">
@@ -330,9 +348,9 @@
             </select>
           </div>
           <div class="flex flex-wrap gap-2 mt-3 items-center">
-            <a href="/api/leads/export/csv"  class="btn-ghost px-3 py-1.5 rounded-lg text-xs">⬇ CSV</a>
-            <a href="/api/leads/export/xlsx" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">⬇ XLSX</a>
-            <a href="/api/leads/export/json" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">⬇ JSON</a>
+            <a href="/api/leads/export/csv"  class="btn-ghost px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-download"/></svg> CSV</a>
+            <a href="/api/leads/export/xlsx" class="btn-ghost px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-download"/></svg> XLSX</a>
+            <a href="/api/leads/export/json" class="btn-ghost px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-download"/></svg> JSON</a>
             <span class="text-xs text-muted ml-auto" x-text="leads.length + ' leads'"></span>
           </div>
         </div>
@@ -349,17 +367,19 @@
               </div>
               <div class="flex items-center justify-between mt-2 text-xs text-muted">
                 <span x-text="l.city + (l.state ? '/'+l.state : '')"></span>
-                <div class="flex gap-1">
-                  <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span>
-                  <span x-show="l.phone">📞</span><span x-show="l.instagram">📸</span>
+                <div class="flex gap-1.5 text-dim">
+                  <svg class="icon" x-show="l.email"><use href="#i-mail"/></svg>
+                  <svg class="icon" x-show="l.whatsapp"><use href="#i-msg"/></svg>
+                  <svg class="icon" x-show="l.phone"><use href="#i-phone"/></svg>
+                  <svg class="icon" x-show="l.instagram"><use href="#i-camera"/></svg>
                 </div>
               </div>
             </div>
           </template>
           <template x-if="!leads.length">
-            <div class="glass rounded-xl p-10 text-center">
-              <div class="text-5xl mb-2 opacity-50">🔍</div>
-              <p class="text-sm text-muted mb-3">Nenhum lead com esses filtros.</p>
+            <div class="glass rounded-xl empty-state">
+              <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-search"/></svg></div>
+              <p class="mb-3">Nenhum lead com esses filtros.</p>
               <button @click="setTab('hunt')" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">Prospectar agora</button>
             </div>
           </template>
@@ -379,14 +399,20 @@
                     <td><span class="badge" :class="l.priority==='maxima'?'badge-danger':l.priority==='alta'?'badge-warn':'badge-muted'" x-text="l.priority"></span></td>
                     <td><span class="badge" :class="l.status==='novo'?'badge-info':l.status==='fechado'?'badge-success':'badge-muted'" x-text="l.status"></span></td>
                     <td>
-                      <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span>
-                      <span x-show="l.phone">📞</span><span x-show="l.instagram">📸</span>
+                      <div class="flex gap-1.5 text-dim">
+                        <svg class="icon" x-show="l.email"><use href="#i-mail"/></svg>
+                        <svg class="icon" x-show="l.whatsapp"><use href="#i-msg"/></svg>
+                        <svg class="icon" x-show="l.phone"><use href="#i-phone"/></svg>
+                        <svg class="icon" x-show="l.instagram"><use href="#i-camera"/></svg>
+                      </div>
                     </td>
                   </tr>
                 </template>
-                <tr x-show="!leads.length"><td colspan="7" class="text-center text-dim py-12">
-                  <div class="text-5xl mb-2 opacity-50">🔍</div>
-                  Nenhum lead. <button @click="setTab('hunt')" class="text-indigo-400 hover:underline">Iniciar prospecção</button>.
+                <tr x-show="!leads.length"><td colspan="7" class="text-center py-12">
+                  <div class="empty-state">
+                    <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-search"/></svg></div>
+                    <p>Nenhum lead. <button @click="setTab('hunt')" class="text-indigo-500 hover:underline">Iniciar prospecção</button>.</p>
+                  </div>
                 </td></tr>
               </tbody>
             </table>
@@ -413,8 +439,10 @@
                       <div class="text-xs text-dim truncate mt-0.5" x-text="(l.city||'') + ' · ' + (l.niche||'')"></div>
                       <div class="flex items-center justify-between mt-2">
                         <span class="badge" :class="l.score>=70?'badge-success':l.score>=40?'badge-warn':'badge-muted'" x-text="l.score"></span>
-                        <div class="flex gap-1 text-xs">
-                          <span x-show="l.email">📧</span><span x-show="l.whatsapp">💬</span><span x-show="l.phone">📞</span>
+                        <div class="flex gap-1.5 text-dim">
+                          <svg class="icon" x-show="l.email"><use href="#i-mail"/></svg>
+                          <svg class="icon" x-show="l.whatsapp"><use href="#i-msg"/></svg>
+                          <svg class="icon" x-show="l.phone"><use href="#i-phone"/></svg>
                         </div>
                       </div>
                     </div>
@@ -434,7 +462,7 @@
       <!-- ========================= LOOKALIKE ========================= -->
       <section x-show="tab==='lookalike'" x-cloak>
         <div class="glass rounded-xl p-4 md:p-6 max-w-3xl">
-          <h3 class="font-semibold mb-1">🪞 Encontre empresas parecidas</h3>
+          <h3 class="section-title mb-1"><span class="icon-box"><svg class="icon"><use href="#i-mirror"/></svg></span>Encontre empresas parecidas</h3>
           <p class="text-xs text-muted mb-4">Pegue um cliente que fechou (ou um site/descrição) e a IA monta uma nova prospecção atrás de empresas com o mesmo perfil.</p>
           <div class="space-y-4">
             <div>
@@ -469,8 +497,13 @@
                 </select>
               </div>
             </div>
-            <button @click="startLookalike()" class="btn-primary px-5 py-2.5 rounded-lg font-semibold">🪞 Buscar similares</button>
-            <p class="text-xs text-dim">💡 Dica: abra qualquer lead e clique em <strong>"Achar similares"</strong> no painel para preencher automaticamente.</p>
+            <button @click="startLookalike()" class="btn-primary px-5 py-2.5 rounded-lg font-semibold inline-flex items-center gap-2">
+              <svg class="icon"><use href="#i-mirror"/></svg> Buscar similares
+            </button>
+            <p class="text-xs text-dim flex items-start gap-1.5">
+              <svg class="icon mt-0.5" style="color:var(--accent)"><use href="#i-sparkle"/></svg>
+              Dica: abra qualquer lead e clique em <strong>"Achar similares"</strong> no painel para preencher automaticamente.
+            </p>
           </div>
         </div>
       </section>
@@ -479,13 +512,13 @@
       <section x-show="tab==='objections'" x-cloak>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="glass rounded-xl p-4 md:p-6">
-            <h3 class="font-semibold mb-1">🛡 Quebra-objeções com IA</h3>
-            <p class="text-xs text-muted mb-4">Cole a objeção que recebeu — a IA gera 3 abordagens (curta, consultiva, com prova social).</p>
+            <h3 class="section-title mb-1"><span class="icon-box"><svg class="icon"><use href="#i-shield"/></svg></span>Quebra-objeções com IA</h3>
+            <p class="text-xs text-muted mb-4 mt-2">Cole a objeção que recebeu — a IA gera 3 abordagens (curta, consultiva, com prova social).</p>
             <div class="space-y-3">
               <textarea rows="4" x-model="objection.text" class="w-full px-3 py-2.5 text-sm" placeholder="Ex: 'Tá caro', 'Já uso outra ferramenta', 'Vou pensar', 'Não é prioridade'"></textarea>
               <input type="text" x-model="objection.context" class="w-full px-3 py-2.5 text-sm" placeholder="Contexto extra (opcional)" />
-              <button @click="runObjection()" :disabled="objectionLoading" class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold disabled:opacity-50">
-                <span x-show="!objectionLoading">✨ Gerar respostas</span>
+              <button @click="runObjection()" :disabled="objectionLoading" class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold disabled:opacity-50 inline-flex items-center gap-2">
+                <template x-if="!objectionLoading"><span class="flex items-center gap-2"><svg class="icon"><use href="#i-sparkle"/></svg> Gerar respostas</span></template>
                 <span x-show="objectionLoading" class="pulse">Pensando…</span>
               </button>
             </div>
@@ -494,9 +527,9 @@
           <div class="glass rounded-xl p-4 md:p-6">
             <h3 class="font-semibold mb-3">Respostas sugeridas</h3>
             <template x-if="!objectionResult">
-              <div class="text-center py-12">
-                <div class="text-5xl mb-2 opacity-50">💬</div>
-                <p class="text-sm text-muted">Cole uma objeção ao lado para ver as sugestões aqui.</p>
+              <div class="empty-state">
+                <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-chat"/></svg></div>
+                <p>Cole uma objeção ao lado para ver as sugestões aqui.</p>
               </div>
             </template>
             <div class="space-y-3" x-show="objectionResult">
@@ -504,13 +537,14 @@
                 <div class="surface rounded-lg p-3">
                   <div class="flex items-center justify-between mb-1">
                     <span class="badge badge-info capitalize" x-text="r.strategy"></span>
-                    <button @click="copyText(r.text)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+                    <button @click="copyText(r.text)" class="text-xs text-muted hover:text-default inline-flex items-center gap-1"><svg class="icon-sm"><use href="#i-copy"/></svg> copiar</button>
                   </div>
                   <p class="text-sm whitespace-pre-line" x-text="r.text"></p>
                 </div>
               </template>
-              <div x-show="objectionResult?.tip" class="text-xs text-amber-400 surface rounded-lg p-3">
-                💡 <span x-text="objectionResult?.tip"></span>
+              <div x-show="objectionResult?.tip" class="text-xs text-amber-500 surface rounded-lg p-3 flex items-start gap-2">
+                <svg class="icon mt-0.5"><use href="#i-sparkle"/></svg>
+                <span x-text="objectionResult?.tip"></span>
               </div>
             </div>
           </div>
@@ -522,9 +556,9 @@
         <div class="glass rounded-xl flex flex-col h-[70vh] max-w-3xl">
           <div class="flex-1 overflow-y-auto scrollbar p-4 space-y-3">
             <template x-if="!chat.history.length">
-              <div class="text-center py-12">
-                <div class="text-5xl mb-2 opacity-50">💬</div>
-                <p class="text-sm text-muted mb-3">Pergunte qualquer coisa sobre seus leads, estratégia ou abordagem.</p>
+              <div class="empty-state">
+                <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-chat"/></svg></div>
+                <p class="mb-3">Pergunte qualquer coisa sobre seus leads, estratégia ou abordagem.</p>
                 <div class="flex flex-wrap gap-2 justify-center">
                   <button @click="chat.input='Quais leads devo abordar primeiro hoje?'; sendChat()" class="btn-ghost text-xs px-3 py-1.5 rounded-full">Quais abordar primeiro?</button>
                   <button @click="chat.input='Sugira mensagens de follow-up para leads sem resposta há 3 dias'; sendChat()" class="btn-ghost text-xs px-3 py-1.5 rounded-full">Follow-up</button>
@@ -540,7 +574,7 @@
             </template>
             <div x-show="chat.loading" class="mr-auto surface rounded-2xl px-4 py-2.5 text-sm pulse">Brainy está pensando…</div>
           </div>
-          <div class="border-t border-white/5 p-3 flex gap-2">
+          <div class="border-t p-3 flex gap-2" style="border-color: var(--border-soft)">
             <input type="text" x-model="chat.input" @keydown.enter="sendChat()"
                    class="flex-1 px-3 py-2.5 text-sm" placeholder="Pergunte algo…" />
             <button @click="sendChat()" :disabled="chat.loading" class="btn-primary px-4 py-2.5 rounded-lg font-semibold disabled:opacity-50">Enviar</button>
@@ -569,9 +603,9 @@
             </div>
           </template>
           <template x-if="!campaigns.length">
-            <div class="glass rounded-xl p-10 text-center col-span-full">
-              <div class="text-5xl mb-2 opacity-50">🎯</div>
-              <p class="text-sm text-muted">Nenhuma campanha ainda. Crie a primeira acima.</p>
+            <div class="glass rounded-xl empty-state col-span-full">
+              <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-target"/></svg></div>
+              <p>Nenhuma campanha ainda. Crie a primeira acima.</p>
             </div>
           </template>
         </div>
@@ -593,8 +627,11 @@
                     <td class="hidden md:table-cell text-dim" x-text="fmtDate(s.created_at)"></td>
                   </tr>
                 </template>
-                <tr x-show="!searches.length"><td colspan="5" class="text-center text-dim py-12">
-                  <div class="text-5xl mb-2 opacity-50">🕘</div>Sem buscas ainda.
+                <tr x-show="!searches.length"><td colspan="5" class="text-center py-12">
+                  <div class="empty-state">
+                    <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-clock"/></svg></div>
+                    <p>Sem buscas ainda.</p>
+                  </div>
                 </td></tr>
               </tbody>
             </table>
@@ -606,7 +643,7 @@
       <section x-show="tab==='jobs'" x-cloak>
         <div class="flex items-center justify-between mb-3">
           <p class="text-sm text-muted">Tarefas rodando ou recém-finalizadas. <strong x-text="runningJobsCount()"></strong> ativa(s).</p>
-          <button @click="loadJobs()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">↻ Atualizar</button>
+          <button @click="loadJobs()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-refresh"/></svg> Atualizar</button>
         </div>
         <div class="glass rounded-xl overflow-hidden">
           <div class="overflow-x-auto">
@@ -629,8 +666,11 @@
                     <td class="hidden md:table-cell text-muted text-xs" x-text="j.message || j.error"></td>
                   </tr>
                 </template>
-                <tr x-show="!jobs.length"><td colspan="5" class="text-center text-dim py-12">
-                  <div class="text-5xl mb-2 opacity-50">⚙️</div>Nenhum job no momento.
+                <tr x-show="!jobs.length"><td colspan="5" class="text-center py-12">
+                  <div class="empty-state">
+                    <div class="icon-box icon-box-lg"><svg class="icon"><use href="#i-cog"/></svg></div>
+                    <p>Nenhum job no momento.</p>
+                  </div>
                 </td></tr>
               </tbody>
             </table>
@@ -654,7 +694,9 @@
           <h3 class="text-lg md:text-xl font-bold truncate" x-text="currentLead?.name"></h3>
           <p class="text-sm text-muted truncate" x-text="(currentLead?.niche || '') + ' · ' + (currentLead?.city || '')"></p>
         </div>
-        <button @click="leadOpen=false" class="text-muted hover:text-white text-xl">✕</button>
+        <button @click="leadOpen=false" class="text-muted hover:text-default p-1.5 rounded-lg" aria-label="Fechar">
+          <svg class="icon icon-lg"><use href="#i-close"/></svg>
+        </button>
       </div>
 
       <div class="grid grid-cols-2 gap-3 mb-4">
@@ -663,10 +705,10 @@
       </div>
 
       <div class="flex flex-wrap gap-2 mb-4">
-        <button @click="useAsLookalike()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">🪞 Achar similares</button>
+        <button @click="useAsLookalike()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-mirror"/></svg> Achar similares</button>
         <button @click="objection.lead_id=currentLead.id; tab='objections'; leadOpen=false"
-                class="btn-ghost text-xs px-3 py-1.5 rounded-lg">🛡 Objeções</button>
-        <button @click="deleteLead()" class="text-xs px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 ml-auto">🗑 Excluir</button>
+                class="btn-ghost text-xs px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-shield"/></svg> Objeções</button>
+        <button @click="deleteLead()" class="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/30 ml-auto inline-flex items-center gap-1.5"><svg class="icon-sm"><use href="#i-trash"/></svg> Excluir</button>
       </div>
 
       <div class="space-y-2 text-sm mb-4">
@@ -689,14 +731,14 @@
       <div class="mb-4" x-show="currentLead?.message_a">
         <div class="flex items-center justify-between mb-1">
           <h4 class="font-semibold">Mensagem A</h4>
-          <button @click="copyText(currentLead?.message_a)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+          <button @click="copyText(currentLead?.message_a)" class="text-xs text-muted hover:text-default inline-flex items-center gap-1"><svg class="icon-sm"><use href="#i-copy"/></svg> copiar</button>
         </div>
         <pre class="text-xs md:text-sm text-muted whitespace-pre-wrap surface p-3 rounded-lg" x-text="currentLead?.message_a"></pre>
       </div>
       <div class="mb-4" x-show="currentLead?.message_b">
         <div class="flex items-center justify-between mb-1">
           <h4 class="font-semibold">Mensagem B</h4>
-          <button @click="copyText(currentLead?.message_b)" class="text-xs text-muted hover:text-white">📋 copiar</button>
+          <button @click="copyText(currentLead?.message_b)" class="text-xs text-muted hover:text-default inline-flex items-center gap-1"><svg class="icon-sm"><use href="#i-copy"/></svg> copiar</button>
         </div>
         <pre class="text-xs md:text-sm text-muted whitespace-pre-wrap surface p-3 rounded-lg" x-text="currentLead?.message_b"></pre>
       </div>

@@ -23,17 +23,17 @@ function appShell() {
     theme: localStorage.getItem('bp_theme') || 'dark',
 
     menu: [
-      { id: 'today',      label: 'Hoje',          icon: '🔥' },
-      { id: 'dashboard',  label: 'Dashboard',     icon: '📊' },
-      { id: 'hunt',       label: 'Prospectar',    icon: '🚀' },
-      { id: 'leads',      label: 'Leads',         icon: '👥' },
-      { id: 'pipeline',   label: 'Pipeline',      icon: '🧭' },
-      { id: 'lookalike',  label: 'Lookalike',     icon: '🪞' },
-      { id: 'objections', label: 'Objeções IA',   icon: '🛡' },
-      { id: 'chat',       label: 'Brainy Chat',   icon: '💬' },
-      { id: 'campaigns',  label: 'Campanhas',     icon: '🎯' },
-      { id: 'history',    label: 'Histórico',     icon: '🕘' },
-      { id: 'jobs',       label: 'Jobs',          icon: '⚙️' },
+      { id: 'today',      label: 'Hoje',          icon: 'fire' },
+      { id: 'dashboard',  label: 'Dashboard',     icon: 'chart' },
+      { id: 'hunt',       label: 'Prospectar',    icon: 'rocket' },
+      { id: 'leads',      label: 'Leads',         icon: 'users' },
+      { id: 'pipeline',   label: 'Pipeline',      icon: 'compass' },
+      { id: 'lookalike',  label: 'Lookalike',     icon: 'mirror' },
+      { id: 'objections', label: 'Objeções IA',   icon: 'shield' },
+      { id: 'chat',       label: 'Brainy Chat',   icon: 'chat' },
+      { id: 'campaigns',  label: 'Campanhas',     icon: 'target' },
+      { id: 'history',    label: 'Histórico',     icon: 'clock' },
+      { id: 'jobs',       label: 'Jobs',          icon: 'cog' },
     ],
 
     titles: {

@@ -6,7 +6,7 @@
        style="background: radial-gradient(circle at 20% 10%, rgba(99,102,241,0.18), transparent 45%), radial-gradient(circle at 80% 80%, rgba(139,92,246,0.18), transparent 45%);"></div>
   <div class="w-full max-w-md" x-data="registerPage()">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold tracking-tight">⚡ Brainy Prospect</h1>
+      <h1 class="text-3xl font-bold tracking-tight inline-flex items-center gap-2"><span class="brand-mark"><svg class="icon icon-lg"><use href="#i-bolt"/></svg></span> Brainy Prospect</h1>
       <p class="text-sm text-muted mt-2">Crie sua conta</p>
     </div>
 
@@ -38,7 +38,7 @@
       </form>
 
       <div x-show="success" x-cloak class="text-center py-6">
-        <div class="text-5xl mb-3">✅</div>
+        <div class="icon-box icon-box-lg mx-auto mb-3" style="background:rgba(16,185,129,.12);color:#10b981;border-color:rgba(16,185,129,.3)"><svg class="icon"><use href="#i-target"/></svg></div>
         <h3 class="text-lg font-semibold mb-2">Conta criada!</h3>
         <p class="text-sm text-muted mb-6">Seu cadastro está aguardando aprovação do admin. Você receberá acesso em breve.</p>
         <a href="/login" class="btn-primary inline-block px-6 py-2.5 rounded-lg font-semibold">Ir para Login</a>
