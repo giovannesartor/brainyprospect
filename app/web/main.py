@@ -114,9 +114,9 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request):
         user = get_current_user_optional(request)
-        if not user:
-            return RedirectResponse("/login")
-        return RedirectResponse("/app")
+        if user:
+            return RedirectResponse("/app")
+        return templates.TemplateResponse(request, "landing.html", {"user": None})
 
     @app.get("/login", response_class=HTMLResponse)
     def page_login(request: Request):
