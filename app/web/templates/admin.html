@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Admin — Brainy Prospect{% endblock %}
+{% block body %}
+<script id="__user_data__" type="application/json">{{ user | tojson | safe }}</script>
+<div x-data="adminPanel()" x-init="boot()" class="min-h-screen flex">
+  <aside class="w-64 glass border-r border-white/5 p-5 hidden md:flex flex-col gap-2">
+    <div class="flex items-center gap-2 mb-6">
+      <span class="text-2xl">🛡</span>
+      <div>
+        <h1 class="text-lg font-bold">Admin</h1>
+        <p class="text-xs text-amber-400">Painel administrativo</p>
+      </div>
+    </div>
+
+    <template x-for="item in menu" :key="item.id">
+      <button @click="tab=item.id"
+              :class="tab===item.id ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+              class="text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+        <span x-text="item.icon"></span>
+        <span x-text="item.label"></span>
+        <span x-show="item.badge" class="ml-auto badge badge-warn" x-text="item.badge"></span>
+      </button>
+    </template>
+
+    <div class="mt-auto pt-4 border-t border-white/5 space-y-2">
+      <a href="/app" class="text-left block px-3 py-2 rounded-lg text-sm text-indigo-300 hover:bg-indigo-500/10 border border-indigo-500/20">
+        ← Voltar ao app
+      </a>
+      <div class="text-xs text-gray-500 px-3 truncate" title="{{ user.email }}">{{ user.email }}</div>
+      <button @click="logout()" class="text-xs text-gray-400 hover:text-white px-3">Sair</button>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-6 overflow-y-auto scrollbar">
+    <header class="mb-6">
+      <h2 class="text-2xl font-bold" x-text="titles[tab]?.[0]"></h2>
+      <p class="text-sm text-gray-400" x-text="titles[tab]?.[1]"></p>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section x-show="tab==='overview'" x-cloak>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="glass rounded-xl p-4"><div class="text-xs text-gray-400">USUÁRIOS</div><div class="text-2xl font-bold" x-text="ov.users?.total ?? 0"></div><div class="text-xs text-gray-500" x-text="(ov.users?.approved||0)+' aprovados'"></div></div>
+        <div class="glass rounded-xl p-4"><div class="text-xs text-amber-400">PENDENTES</div><div class="text-2xl font-bold text-amber-300" x-text="ov.users?.pending ?? 0"></div><div class="text-xs text-gray-500">aguardando aprovação</div></div>
+        <div class="glass rounded-xl p-4"><div class="text-xs text-gray-400">LEADS</div><div class="text-2xl font-bold" x-text="ov.leads?.total ?? 0"></div><div class="text-xs text-gray-500" x-text="(ov.leads?.weekly||0)+' esta semana'"></div></div>
+        <div class="glass rounded-xl p-4"><div class="text-xs text-gray-400">JOBS RODANDO</div><div class="text-2xl font-bold" x-text="ov.jobs_running ?? 0"></div><div class="text-xs text-gray-500" x-text="ov.searches_count + ' buscas total'"></div></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Saúde das fontes</h3>
+          <div class="space-y-2">
+            <template x-for="(v,k) in (ov.health||{})" :key="k">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-300 capitalize" x-text="k"></span>
+                <span class="badge" :class="v?.ok ? 'badge-success' : 'badge-danger'" x-text="v?.ok ? 'OK' : 'FAIL'"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Banco de dados</h3>
+          <div class="text-sm space-y-1">
+            <div><strong>Backend:</strong> <span class="badge badge-info" x-text="ov.db?.backend"></span></div>
+            <div class="text-xs text-gray-400 truncate" x-text="ov.db?.url_safe"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- USUÁRIOS -->
+    <section x-show="tab==='users'" x-cloak>
+      <div class="flex gap-2 mb-4">
+        <button @click="userFilter=''; loadUsers()" :class="userFilter===''?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Todos</button>
+        <button @click="userFilter='pending'; loadUsers()" :class="userFilter==='pending'?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Pendentes <span class="ml-1 badge badge-warn" x-text="ov.users?.pending||0"></span></button>
+        <button @click="userFilter='approved'; loadUsers()" :class="userFilter==='approved'?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Aprovados</button>
+        <button @click="userFilter='blocked'; loadUsers()" :class="userFilter==='blocked'?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Bloqueados</button>
+      </div>
+
+      <div class="glass rounded-xl overflow-hidden">
+        <table>
+          <thead><tr><th>Email</th><th>Nome</th><th>Papel</th><th>Status</th><th>Criado</th><th>Último login</th><th>Ações</th></tr></thead>
+          <tbody>
+            <template x-for="u in users" :key="u.id">
+              <tr>
+                <td class="font-medium" x-text="u.email"></td>
+                <td x-text="u.full_name"></td>
+                <td><span class="badge" :class="u.role==='admin'?'badge-warn':'badge-info'" x-text="u.role"></span></td>
+                <td><span class="badge" :class="u.status==='approved'?'badge-success':u.status==='pending'?'badge-warn':'badge-danger'" x-text="u.status"></span></td>
+                <td class="text-xs text-gray-400" x-text="fmtDate(u.created_at)"></td>
+                <td class="text-xs text-gray-400" x-text="fmtDate(u.last_login_at)"></td>
+                <td class="flex flex-wrap gap-1">
+                  <button x-show="u.status!=='approved'" @click="approveUser(u.id)" class="text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 hover:bg-green-600/30">Aprovar</button>
+                  <button x-show="u.status==='approved'" @click="blockUser(u.id)" class="text-xs px-2 py-1 rounded bg-red-600/20 text-red-300 hover:bg-red-600/30">Bloquear</button>
+                  <button @click="resetPassword(u)" class="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10">Senha</button>
+                  <button @click="toggleRole(u)" class="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10" x-text="u.role==='admin'?'-Admin':'+Admin'"></button>
+                  <button @click="deleteUser(u.id)" class="text-xs px-2 py-1 rounded bg-red-700/30 text-red-300 hover:bg-red-700/50">×</button>
+                </td>
+              </tr>
+            </template>
+            <tr x-show="!users.length"><td colspan="7" class="text-center text-gray-500 py-8">Nenhum usuário.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONFIGURAÇÕES -->
+    <section x-show="tab==='settings'" x-cloak>
+      <div class="glass rounded-xl p-5 max-w-3xl">
+        <h3 class="font-semibold mb-4">IA — Provedores</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-gray-400">Provedor padrão</label>
+            <select x-model="settings.ai.default_provider" class="w-full px-3 py-2 rounded-lg text-sm">
+              <option value="deepseek">DeepSeek</option><option value="openai">OpenAI</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h4 class="font-semibold text-sm mb-2">DeepSeek</h4>
+            <input type="password" placeholder="API Key" x-model="settings.ai.deepseek.api_key" class="w-full px-3 py-2 rounded-lg text-sm mb-2" />
+            <input type="text" placeholder="Modelo" x-model="settings.ai.deepseek.model" class="w-full px-3 py-2 rounded-lg text-sm" />
+          </div>
+          <div>
+            <h4 class="font-semibold text-sm mb-2">OpenAI</h4>
+            <input type="password" placeholder="API Key" x-model="settings.ai.openai.api_key" class="w-full px-3 py-2 rounded-lg text-sm mb-2" />
+            <input type="text" placeholder="Modelo" x-model="settings.ai.openai.model" class="w-full px-3 py-2 rounded-lg text-sm" />
+          </div>
+        </div>
+
+        <h3 class="font-semibold mt-8 mb-4">Scraping</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div><label class="text-xs text-gray-400">Timeout (s)</label><input type="number" x-model.number="settings.scraping.timeout_seconds" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Delay min (ms)</label><input type="number" x-model.number="settings.scraping.min_delay_ms" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Delay max (ms)</label><input type="number" x-model.number="settings.scraping.max_delay_ms" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Retries</label><input type="number" x-model.number="settings.scraping.max_retries" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Max/busca</label><input type="number" x-model.number="settings.scraping.max_results_per_search" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Proxy (opcional)</label><input type="text" x-model="settings.scraping.proxy" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+        </div>
+
+        <h3 class="font-semibold mt-8 mb-4">Mensagens</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label class="text-xs text-gray-400">Seu nome</label><input type="text" x-model="settings.messages.sender_name" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Empresa</label><input type="text" x-model="settings.messages.sender_company" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+          <div><label class="text-xs text-gray-400">Site</label><input type="text" x-model="settings.messages.sender_site" class="w-full px-3 py-2 rounded-lg text-sm" /></div>
+        </div>
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div><label class="text-xs text-gray-400">Template venda direta</label><textarea rows="6" x-model="settings.messages.direct_template" class="w-full px-3 py-2 rounded-lg text-sm font-mono"></textarea></div>
+          <div><label class="text-xs text-gray-400">Template parceiros</label><textarea rows="6" x-model="settings.messages.partner_template" class="w-full px-3 py-2 rounded-lg text-sm font-mono"></textarea></div>
+        </div>
+
+        <div class="mt-6 flex gap-2">
+          <button @click="saveSettings()" class="btn-primary px-5 py-2.5 rounded-lg text-white font-semibold">Salvar configurações</button>
+          <span x-show="settingsSaved" class="text-green-400 text-sm self-center">✓ Salvo</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOBS -->
+    <section x-show="tab==='jobs'" x-cloak>
+      <div class="flex gap-2 mb-3">
+        <button @click="cleanupJobs()" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">Limpar antigos</button>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <table>
+          <thead><tr><th>ID</th><th>Tipo</th><th>Usuário</th><th>Status</th><th>Progresso</th><th>Mensagem</th></tr></thead>
+          <tbody>
+            <template x-for="j in adminJobs" :key="j.id">
+              <tr>
+                <td class="font-mono text-xs" x-text="j.id"></td>
+                <td x-text="j.kind"></td>
+                <td class="text-xs text-gray-400" x-text="j.user_id || '—'"></td>
+                <td><span class="badge" :class="j.status==='done'?'badge-success':j.status==='error'?'badge-danger':'badge-info'" x-text="j.status"></span></td>
+                <td x-text="j.progress + '%'"></td>
+                <td class="text-gray-300" x-text="j.message || j.error"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="/static/admin.js"></script>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Brainy Prospect{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0f; color: #e6e7eb; }
+    .glass { background: rgba(20,20,30,0.7); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.06); }
+    .btn-primary { background: linear-gradient(135deg,#6366F1,#8b5cf6); transition: filter .15s; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-ghost { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+    .badge-success { background: #064e3b; color:#6ee7b7; }
+    .badge-warn { background: #78350f; color:#fcd34d; }
+    .badge-danger { background: #7f1d1d; color:#fca5a5; }
+    .badge-info { background: #1e3a8a; color:#93c5fd; }
+    .badge-muted { background: #374151; color:#d1d5db; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color:#9ca3af; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    input, select, textarea { background: #16161e; border: 1px solid rgba(255,255,255,0.08); color: #e6e7eb; }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:#6366F1; }
+    .scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius:4px; }
+    .pulse { animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:.6;} 50%{opacity:1;} }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+  {% block body %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,61 @@
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Distribuições
+build/
+dist/
+*.egg-info/
+*.spec.bak
+
+# Banco de dados local (NÃO subir dados de usuários)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+brainyprospect.db
+data/
+brainyprospect_data/
+user_data/
+
+# Configurações sensíveis
+config/settings.json
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs e exportações
+logs/
+exports/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Playwright
+.playwright/
+playwright-report/

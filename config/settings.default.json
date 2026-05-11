@@ -1,0 +1,34 @@
+{
+  "ai": {
+    "default_provider": "deepseek",
+    "deepseek": {
+      "api_key": "sk-1fe90428071c4714826c8936902e6c83",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-chat",
+      "temperature": 0.4,
+      "max_tokens": 1500
+    },
+    "openai": {
+      "api_key": "",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini",
+      "temperature": 0.4,
+      "max_tokens": 1500
+    }
+  },
+  "scraping": {
+    "timeout_seconds": 25,
+    "min_delay_ms": 800,
+    "max_delay_ms": 2400,
+    "max_retries": 3,
+    "max_results_per_search": 40,
+    "user_agent_rotation": true,
+    "proxy": "",
+    "headless": true
+  },
+  "app": {
+    "default_country": "Brasil",
+    "default_language": "pt-BR",
+    "theme": "dark"
+  }
+}
