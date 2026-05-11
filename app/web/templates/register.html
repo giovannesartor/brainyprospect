@@ -1,36 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Criar conta — Brainy Prospect{% endblock %}
 {% block body %}
-<div class="min-h-screen flex items-center justify-center px-4 py-10"
-     style="background: radial-gradient(circle at 20% 10%, rgba(99,102,241,0.15), transparent 40%), radial-gradient(circle at 80% 80%, rgba(139,92,246,0.15), transparent 40%), #0a0a0f;">
+<div class="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
+  <div class="absolute inset-0 -z-10 opacity-60 pointer-events-none"
+       style="background: radial-gradient(circle at 20% 10%, rgba(99,102,241,0.18), transparent 45%), radial-gradient(circle at 80% 80%, rgba(139,92,246,0.18), transparent 45%);"></div>
   <div class="w-full max-w-md" x-data="registerPage()">
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold tracking-tight">⚡ Brainy Prospect</h1>
-      <p class="text-sm text-gray-400 mt-2">Crie sua conta</p>
+      <p class="text-sm text-muted mt-2">Crie sua conta</p>
     </div>
 
-    <div class="glass rounded-2xl p-8 shadow-2xl">
+    <div class="glass rounded-2xl p-6 md:p-8">
       <h2 class="text-xl font-semibold mb-2">Solicitar acesso</h2>
-      <p class="text-xs text-gray-400 mb-6">Sua conta passará por aprovação do admin antes do primeiro login.</p>
+      <p class="text-xs text-muted mb-6">Sua conta passará por aprovação do admin antes do primeiro login.</p>
 
       <form @submit.prevent="submit()" class="space-y-4" x-show="!success">
         <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1.5">Nome completo</label>
-          <input type="text" x-model="full_name" class="w-full px-3 py-2.5 rounded-lg" placeholder="Seu nome" />
+          <label class="block text-xs font-medium text-muted mb-1.5">Nome completo</label>
+          <input type="text" x-model="full_name" class="w-full px-3 py-2.5" placeholder="Seu nome" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1.5">Email</label>
-          <input type="email" required x-model="email" class="w-full px-3 py-2.5 rounded-lg" placeholder="voce@empresa.com" />
+          <label class="block text-xs font-medium text-muted mb-1.5">Email</label>
+          <input type="email" required x-model="email" class="w-full px-3 py-2.5" placeholder="voce@empresa.com" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1.5">Senha</label>
-          <input type="password" required minlength="6" x-model="password" class="w-full px-3 py-2.5 rounded-lg" placeholder="Mínimo 6 caracteres" />
+          <label class="block text-xs font-medium text-muted mb-1.5">Senha</label>
+          <input type="password" required minlength="6" x-model="password" class="w-full px-3 py-2.5" placeholder="Mínimo 6 caracteres" />
         </div>
 
-        <div x-show="error" x-cloak class="text-sm text-red-400 bg-red-950/40 border border-red-900/40 rounded-lg p-3" x-text="error"></div>
+        <div x-show="error" x-cloak class="text-sm text-rose-500 bg-rose-500/10 border border-rose-500/30 rounded-lg p-3" x-text="error"></div>
 
         <button type="submit" :disabled="loading"
-                class="btn-primary w-full py-2.5 rounded-lg font-semibold text-white disabled:opacity-50">
+                class="btn-primary w-full py-2.5 rounded-lg font-semibold disabled:opacity-50">
           <span x-show="!loading">Criar conta</span>
           <span x-show="loading" class="pulse">Enviando…</span>
         </button>
@@ -39,13 +40,13 @@
       <div x-show="success" x-cloak class="text-center py-6">
         <div class="text-5xl mb-3">✅</div>
         <h3 class="text-lg font-semibold mb-2">Conta criada!</h3>
-        <p class="text-sm text-gray-400 mb-6">Seu cadastro está aguardando aprovação do admin. Você receberá acesso em breve.</p>
-        <a href="/login" class="btn-primary inline-block px-6 py-2.5 rounded-lg font-semibold text-white">Ir para Login</a>
+        <p class="text-sm text-muted mb-6">Seu cadastro está aguardando aprovação do admin. Você receberá acesso em breve.</p>
+        <a href="/login" class="btn-primary inline-block px-6 py-2.5 rounded-lg font-semibold">Ir para Login</a>
       </div>
 
-      <div class="mt-6 text-center text-sm text-gray-400" x-show="!success">
+      <div class="mt-6 text-center text-sm text-muted" x-show="!success">
         Já tem conta?
-        <a href="/login" class="text-indigo-400 hover:text-indigo-300 font-medium">Entrar</a>
+        <a href="/login" class="text-indigo-500 hover:text-indigo-400 font-medium">Entrar</a>
       </div>
     </div>
   </div>

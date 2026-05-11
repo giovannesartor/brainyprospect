@@ -2,6 +2,7 @@ function adminPanel() {
   return {
     user: (function(){ try { return JSON.parse(document.getElementById('__user_data__').textContent); } catch { return {}; } })(),
     tab: 'overview',
+    sidebarOpen: false,
     menu: [
       {id:'overview', label:'Visão geral', icon:'📊'},
       {id:'users',    label:'Usuários', icon:'👥'},
