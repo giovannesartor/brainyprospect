@@ -139,8 +139,8 @@ def hunt_lookalike(payload: LookalikeIn, user: dict = Depends(require_user)):
     req = HuntRequest(
         source_input=source,
         is_website=is_site,
-        city=city,
-        state=state,
+        city=(city or ""),
+        state=(state or ""),
         max_per_niche=payload.max_per_niche,
         use_ai_qualification=True,
         mode=payload.mode,
@@ -242,7 +242,11 @@ def brainy_chat(payload: ChatIn, _: dict = Depends(require_user)):
         out = _chat(prompt, json_mode=True)
     except AIClientError as e:
         raise HTTPException(status_code=503, detail=f"IA indisponível: {e}")
-    return {"reply": out.get("reply") or "Sem resposta."}
+    reply = out.get("reply") if isinstance(out, dict) else None
+    if not reply and isinstance(out, dict):
+        # fallback: às vezes a IA devolve outro formato
+        reply = out.get("text") or out.get("answer") or ""
+    return {"reply": reply or "Sem resposta."}
 
 
 # =============================================================
