@@ -22,7 +22,7 @@
     </div>
 
     <template x-for="item in menu" :key="item.id">
-      <button @click="tab=item.id; sidebarOpen=false"
+      <button @click="onTabChange(item.id)"
               :class="tab===item.id ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-muted hover:text-white hover:bg-white/5'"
               class="text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
         <span x-text="item.icon"></span>
@@ -88,6 +88,401 @@
       </div>
     </section>
 
+    <!-- ATIVIDADE AO VIVO -->
+    <section x-show="tab==='activity'" x-cloak>
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+        <div class="glass rounded-xl p-4 lg:col-span-1">
+          <div class="text-xs text-emerald-400 uppercase tracking-wider mb-2">Online agora</div>
+          <div class="text-3xl font-bold text-emerald-300" x-text="online.length"></div>
+          <div class="text-xs text-dim mb-3">últimos 5 min</div>
+          <div class="space-y-1 max-h-64 overflow-y-auto scrollbar">
+            <template x-for="u in online" :key="u.id">
+              <div class="text-xs flex items-center gap-2 py-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="truncate flex-1" x-text="u.email"></span>
+                <span class="text-dim" x-text="fmtTime(u.last_seen_at)"></span>
+              </div>
+            </template>
+            <div x-show="!online.length" class="text-dim text-xs">ninguém online</div>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-4 lg:col-span-3">
+          <div class="flex flex-wrap gap-2 items-end">
+            <div class="flex-1 min-w-[160px]">
+              <label class="text-xs text-dim">Buscar (email/path/resumo)</label>
+              <input x-model="activityFilter.q" @keydown.enter="loadActivity()" placeholder="ex: prospect, gmail.com…" class="w-full px-3 py-2 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label class="text-xs text-dim">User ID</label>
+              <input x-model="activityFilter.user_id" @keydown.enter="loadActivity()" class="w-24 px-3 py-2 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label class="text-xs text-dim">Ação</label>
+              <select x-model="activityFilter.action" @change="loadActivity()" class="px-3 py-2 rounded-lg text-sm">
+                <option value="">Todas</option>
+                <option value="login_attempt">Login</option>
+                <option value="register">Registro</option>
+                <option value="hunt_start">Prospecção</option>
+                <option value="lookalike_start">Lookalike</option>
+                <option value="analyze">Análise</option>
+                <option value="export">Export</option>
+                <option value="ai_chat">Brainy Chat</option>
+                <option value="ai_objection">Objeções IA</option>
+                <option value="impersonate">Impersonate</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-dim">Período</label>
+              <select x-model.number="activityFilter.since_minutes" @change="loadActivity()" class="px-3 py-2 rounded-lg text-sm">
+                <option :value="15">15 min</option>
+                <option :value="60">1 h</option>
+                <option :value="360">6 h</option>
+                <option :value="1440">24 h</option>
+                <option :value="10080">7 dias</option>
+              </select>
+            </div>
+            <button @click="loadActivity()" class="btn-primary px-4 py-2 rounded-lg text-sm text-white">Aplicar</button>
+            <label class="text-xs flex items-center gap-1 ml-2"><input type="checkbox" x-model="activityAuto" /> auto-refresh 5s</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Resumo / Path</th><th>Status</th><th>IP</th><th>ms</th></tr></thead>
+            <tbody>
+              <template x-for="a in activity" :key="a.id">
+                <tr>
+                  <td class="text-xs whitespace-nowrap" x-text="fmtDate(a.created_at)"></td>
+                  <td class="text-xs">
+                    <button x-show="a.user_id" class="text-indigo-300 hover:underline" @click="openUserProfile(a.user_id)" x-text="a.user_email||('#'+a.user_id)"></button>
+                    <span x-show="!a.user_id" class="text-dim">anônimo</span>
+                  </td>
+                  <td><span class="badge" :class="actionBadge(a.action)" x-text="a.action"></span></td>
+                  <td class="text-xs max-w-md truncate" :title="a.summary || a.path">
+                    <span class="text-gray-200" x-text="a.summary || a.path"></span>
+                  </td>
+                  <td class="text-xs"><span class="badge" :class="(a.status_code||0)>=400?'badge-danger':'badge-success'" x-text="a.status_code||'-'"></span></td>
+                  <td class="text-xs text-dim" x-text="a.ip"></td>
+                  <td class="text-xs text-dim" x-text="a.duration_ms"></td>
+                </tr>
+              </template>
+              <tr x-show="!activity.length"><td colspan="7" class="text-center text-dim py-8">Sem atividade no período.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MÉTRICAS -->
+    <section x-show="tab==='metrics'" x-cloak>
+      <div x-show="!metrics" class="text-dim">Carregando…</div>
+      <div x-show="metrics" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-dim uppercase">IA — chamadas (30d)</div>
+          <div class="text-2xl font-bold" x-text="fmtNumber(metrics?.ai?.total_calls)"></div>
+          <div class="text-xs text-dim" x-text="fmtNumber(metrics?.ai?.total_tokens)+' tokens'"></div>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-amber-400 uppercase">IA — custo (30d)</div>
+          <div class="text-2xl font-bold text-amber-300" x-text="fmtCurrency(metrics?.ai?.total_cost_usd)"></div>
+          <div class="text-xs text-dim">USD estimado</div>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-dim uppercase">Atividade total (30d)</div>
+          <div class="text-2xl font-bold" x-text="fmtNumber((metrics?.per_day||[]).reduce((s,d)=>s+d.count,0))"></div>
+          <div class="text-xs text-dim">requests auditados</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Top usuários (atividade)</h3>
+          <div class="space-y-1">
+            <template x-for="u in (metrics?.top_users||[])" :key="u.email">
+              <div class="flex justify-between text-sm py-1 border-b border-white/5">
+                <span class="truncate" x-text="u.email"></span>
+                <span class="font-mono text-dim" x-text="fmtNumber(u.count)"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Top ações</h3>
+          <div class="space-y-1">
+            <template x-for="a in (metrics?.top_actions||[])" :key="a.action">
+              <div class="flex justify-between text-sm py-1 border-b border-white/5">
+                <span x-text="a.action"></span>
+                <span class="font-mono text-dim" x-text="fmtNumber(a.count)"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Top buscas (queries)</h3>
+          <div class="space-y-1 max-h-72 overflow-y-auto scrollbar">
+            <template x-for="q in (metrics?.top_queries||[])" :key="q.query">
+              <div class="flex justify-between text-sm py-1 border-b border-white/5 gap-2">
+                <span class="truncate" :title="q.query" x-text="q.query"></span>
+                <span class="font-mono text-dim" x-text="fmtNumber(q.count)"></span>
+              </div>
+            </template>
+            <div x-show="!(metrics?.top_queries||[]).length" class="text-dim text-sm">Sem buscas ainda.</div>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <h3 class="font-semibold mb-3">Saúde dos scrapers (24h)</h3>
+          <div class="space-y-2">
+            <template x-for="s in (metrics?.scraper_health||[])" :key="s.source">
+              <div class="text-sm">
+                <div class="flex justify-between">
+                  <span class="font-medium capitalize" x-text="s.source"></span>
+                  <span class="badge" :class="s.success_rate>=80?'badge-success':s.success_rate>=50?'badge-warn':'badge-danger'" x-text="s.success_rate+'%'"></span>
+                </div>
+                <div class="text-xs text-dim" x-text="s.total+' execuções · '+s.failures+' falhas · '+s.blocked+' bloqueios'"></div>
+              </div>
+            </template>
+            <div x-show="!(metrics?.scraper_health||[]).length" class="text-dim text-sm">Sem execuções nas últimas 24h.</div>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-5 lg:col-span-2">
+          <h3 class="font-semibold mb-3">Top usuários por custo IA</h3>
+          <table class="w-full">
+            <thead><tr><th>User ID</th><th>Custo (USD)</th><th>Tokens</th><th></th></tr></thead>
+            <tbody>
+              <template x-for="u in (metrics?.ai?.top_users||[])" :key="u.user_id">
+                <tr>
+                  <td x-text="u.user_id"></td>
+                  <td class="font-mono" x-text="fmtCurrency(u.cost_usd)"></td>
+                  <td class="font-mono" x-text="fmtNumber(u.tokens)"></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="openUserProfile(u.user_id)">ver</button></td>
+                </tr>
+              </template>
+              <tr x-show="!(metrics?.ai?.top_users||[]).length"><td colspan="4" class="text-dim text-center py-4">Sem uso de IA ainda.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSPETOR DE IA -->
+    <section x-show="tab==='ai'" x-cloak>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <input x-model="aiFilter.user_id" @keydown.enter="loadAI()" placeholder="User ID" class="px-3 py-2 rounded-lg text-sm w-32" />
+        <select x-model="aiFilter.feature" @change="loadAI()" class="px-3 py-2 rounded-lg text-sm">
+          <option value="">Todas as features</option>
+          <option value="hunt">Hunt (qualificação)</option>
+          <option value="chat">Brainy Chat</option>
+          <option value="objection">Objeções</option>
+          <option value="analyze">Análise</option>
+          <option value="generic">Outras</option>
+        </select>
+        <button @click="loadAI()" class="btn-primary px-3 py-2 rounded-lg text-sm text-white">Aplicar</button>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>User</th><th>Feature</th><th>Modelo</th><th>Tokens</th><th>Custo</th><th>Latência</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <template x-for="a in aiUsage" :key="a.id">
+                <tr>
+                  <td class="text-xs" x-text="fmtDate(a.created_at)"></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="openUserProfile(a.user_id)" x-text="a.user_id||'-'"></button></td>
+                  <td x-text="a.feature"></td>
+                  <td class="text-xs text-dim" x-text="a.model"></td>
+                  <td class="font-mono text-xs" x-text="a.prompt_tokens+'/'+a.completion_tokens"></td>
+                  <td class="font-mono text-xs" x-text="fmtCurrency(a.cost_usd)"></td>
+                  <td class="font-mono text-xs" x-text="a.latency_ms+'ms'"></td>
+                  <td><span class="badge" :class="a.success?'badge-success':'badge-danger'" x-text="a.success?'OK':'ERR'"></span></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="aiDetail=a">ver</button></td>
+                </tr>
+              </template>
+              <tr x-show="!aiUsage.length"><td colspan="9" class="text-dim text-center py-8">Sem uso de IA registrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detalhe de chamada IA -->
+      <div x-show="aiDetail" x-cloak @click.self="aiDetail=null" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-xl p-5 max-w-3xl w-full max-h-[90vh] overflow-y-auto scrollbar">
+          <div class="flex justify-between mb-3">
+            <h3 class="font-bold" x-text="'Chamada IA #'+(aiDetail?.id)"></h3>
+            <button @click="aiDetail=null" class="text-dim hover:text-white">✕</button>
+          </div>
+          <div class="text-xs text-dim mb-3" x-text="(aiDetail?.feature||'')+' · '+(aiDetail?.model||'')+' · '+fmtCurrency(aiDetail?.cost_usd)"></div>
+          <h4 class="text-sm font-semibold mb-1">Prompt</h4>
+          <pre class="text-xs bg-black/30 p-3 rounded-lg whitespace-pre-wrap mb-3" x-text="aiDetail?.prompt_excerpt"></pre>
+          <h4 class="text-sm font-semibold mb-1">Resposta</h4>
+          <pre class="text-xs bg-black/30 p-3 rounded-lg whitespace-pre-wrap" x-text="aiDetail?.response_excerpt"></pre>
+          <div x-show="aiDetail?.error" class="mt-3 text-xs text-red-300">
+            <strong>Erro:</strong> <span x-text="aiDetail?.error"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCRAPERS -->
+    <section x-show="tab==='scrapers'" x-cloak>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <select x-model="scraperFilter.source" @change="loadScrapers()" class="px-3 py-2 rounded-lg text-sm">
+          <option value="">Todas as fontes</option>
+          <option value="google_maps">Google Maps</option>
+          <option value="bing">Bing</option>
+          <option value="duckduckgo">DuckDuckGo</option>
+        </select>
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" x-model="scraperFilter.only_failed" @change="loadScrapers()" /> só falhas</label>
+        <button @click="loadScrapers()" class="btn-primary px-3 py-2 rounded-lg text-sm text-white">Aplicar</button>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>User</th><th>Fonte</th><th>Query</th><th>Local</th><th>Resultados</th><th>ms</th><th>Status</th></tr></thead>
+            <tbody>
+              <template x-for="r in scraperRuns" :key="r.id">
+                <tr>
+                  <td class="text-xs" x-text="fmtDate(r.created_at)"></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="openUserProfile(r.user_id)" x-text="r.user_id||'-'"></button></td>
+                  <td><span class="badge badge-info" x-text="r.source"></span></td>
+                  <td class="text-xs max-w-xs truncate" :title="r.query" x-text="r.query"></td>
+                  <td class="text-xs text-dim" x-text="(r.city||'')+(r.state?'/'+r.state:'')"></td>
+                  <td class="font-mono text-xs" x-text="r.results"></td>
+                  <td class="font-mono text-xs" x-text="r.duration_ms+'ms'"></td>
+                  <td>
+                    <span x-show="r.success && !r.blocked" class="badge badge-success">OK</span>
+                    <span x-show="r.blocked" class="badge badge-danger">BLOCK</span>
+                    <span x-show="!r.success && !r.blocked" class="badge badge-danger" :title="r.error">ERR</span>
+                  </td>
+                </tr>
+              </template>
+              <tr x-show="!scraperRuns.length"><td colspan="8" class="text-dim text-center py-8">Sem execuções ainda.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPORTS -->
+    <section x-show="tab==='exports'" x-cloak>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>User</th><th>Formato</th><th>Linhas</th><th>Filtros</th><th>IP</th><th>Hash</th></tr></thead>
+            <tbody>
+              <template x-for="e in exports" :key="e.id">
+                <tr>
+                  <td class="text-xs" x-text="fmtDate(e.created_at)"></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="openUserProfile(e.user_id)" x-text="e.user_id||'-'"></button></td>
+                  <td><span class="badge badge-info" x-text="e.format"></span></td>
+                  <td class="font-mono text-xs" x-text="fmtNumber(e.rows)"></td>
+                  <td class="text-xs text-dim max-w-xs truncate" :title="JSON.stringify(e.filters)" x-text="JSON.stringify(e.filters||{})"></td>
+                  <td class="text-xs text-dim" x-text="e.ip"></td>
+                  <td class="text-xs font-mono text-dim" x-text="(e.file_hash||'').slice(0,12)"></td>
+                </tr>
+              </template>
+              <tr x-show="!exports.length"><td colspan="7" class="text-dim text-center py-8">Sem exports.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGINS -->
+    <section x-show="tab==='logins'" x-cloak>
+      <div class="flex gap-2 mb-3">
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" x-model="loginOnlyFailed" @change="loadLogins()" /> só falhas</label>
+        <button @click="loadLogins()" class="btn-primary px-3 py-2 rounded-lg text-sm text-white">Atualizar</button>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>Email</th><th>Sucesso</th><th>Motivo</th><th>IP</th><th>Device</th></tr></thead>
+            <tbody>
+              <template x-for="ev in logins" :key="ev.id">
+                <tr>
+                  <td class="text-xs" x-text="fmtDate(ev.created_at)"></td>
+                  <td class="text-xs" x-text="ev.email"></td>
+                  <td><span class="badge" :class="ev.success?'badge-success':'badge-danger'" x-text="ev.success?'OK':'FAIL'"></span></td>
+                  <td class="text-xs text-dim" x-text="ev.reason"></td>
+                  <td class="text-xs text-dim" x-text="ev.ip"></td>
+                  <td class="text-xs text-dim max-w-xs truncate" :title="ev.user_agent" x-text="ev.user_agent"></td>
+                </tr>
+              </template>
+              <tr x-show="!logins.length"><td colspan="6" class="text-dim text-center py-8">Sem registros.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ERROS -->
+    <section x-show="tab==='errors'" x-cloak>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead><tr><th>Quando</th><th>User</th><th>Origem</th><th>Página</th><th>Mensagem</th><th></th></tr></thead>
+            <tbody>
+              <template x-for="t in errors" :key="t.id">
+                <tr>
+                  <td class="text-xs" x-text="fmtDate(t.created_at)"></td>
+                  <td class="text-xs"><button class="text-indigo-300 hover:underline" @click="openUserProfile(t.user_id)" x-text="t.user_id||'-'"></button></td>
+                  <td><span class="badge" :class="t.source==='frontend'?'badge-warn':'badge-danger'" x-text="t.source"></span></td>
+                  <td class="text-xs text-dim max-w-xs truncate" :title="t.page" x-text="t.page"></td>
+                  <td class="text-xs max-w-md truncate" :title="t.message" x-text="t.message"></td>
+                  <td><button class="text-xs text-indigo-300 hover:underline" @click="errorDetail=t">ver</button></td>
+                </tr>
+              </template>
+              <tr x-show="!errors.length"><td colspan="6" class="text-dim text-center py-8">Nenhum erro reportado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div x-show="errorDetail" x-cloak @click.self="errorDetail=null" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-xl p-5 max-w-3xl w-full max-h-[90vh] overflow-y-auto scrollbar">
+          <div class="flex justify-between mb-3">
+            <h3 class="font-bold" x-text="'Erro #'+(errorDetail?.id)"></h3>
+            <button @click="errorDetail=null" class="text-dim hover:text-white">✕</button>
+          </div>
+          <div class="text-xs text-dim mb-3" x-text="(errorDetail?.source||'')+' · '+(errorDetail?.page||'')+' · '+fmtDate(errorDetail?.created_at)"></div>
+          <h4 class="text-sm font-semibold mb-1">Mensagem</h4>
+          <pre class="text-xs bg-black/30 p-3 rounded-lg whitespace-pre-wrap mb-3" x-text="errorDetail?.message"></pre>
+          <h4 class="text-sm font-semibold mb-1">Stack</h4>
+          <pre class="text-xs bg-black/30 p-3 rounded-lg whitespace-pre-wrap" x-text="errorDetail?.stack"></pre>
+          <div class="text-xs text-dim mt-3" x-text="errorDetail?.user_agent"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEEDBACK -->
+    <section x-show="tab==='feedback'" x-cloak>
+      <div class="flex gap-2 mb-3">
+        <button @click="feedbackFilter=''; loadFeedback()" :class="feedbackFilter===''?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Todos</button>
+        <button @click="feedbackFilter='open'; loadFeedback()" :class="feedbackFilter==='open'?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Abertos</button>
+        <button @click="feedbackFilter='closed'; loadFeedback()" :class="feedbackFilter==='closed'?'btn-primary text-white':'btn-ghost'" class="px-3 py-1.5 rounded-lg text-sm">Fechados</button>
+      </div>
+      <div class="space-y-3">
+        <template x-for="t in feedback" :key="t.id">
+          <div class="glass rounded-xl p-4">
+            <div class="flex justify-between items-start gap-2 mb-2">
+              <div>
+                <span class="badge badge-info" x-text="t.kind"></span>
+                <span class="font-semibold ml-2" x-text="t.subject || '(sem assunto)'"></span>
+                <span class="text-xs text-dim ml-2" x-text="t.user_email||'anônimo'"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-dim" x-text="fmtDate(t.created_at)"></span>
+                <button x-show="t.status==='open'" @click="closeTicket(t.id)" class="text-xs px-2 py-1 rounded bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30">Fechar</button>
+              </div>
+            </div>
+            <div class="text-sm whitespace-pre-wrap" x-text="t.message"></div>
+            <div class="text-xs text-dim mt-2" x-text="'Página: '+(t.page||'-')"></div>
+          </div>
+        </template>
+        <div x-show="!feedback.length" class="text-dim text-center py-8">Nenhum feedback.</div>
+      </div>
+    </section>
+
     <!-- USUÁRIOS -->
     <section x-show="tab==='users'" x-cloak>
       <div class="flex gap-2 mb-4">
@@ -111,10 +506,13 @@
                 <td class="hidden md:table-cell text-xs text-dim" x-text="fmtDate(u.created_at)"></td>
                 <td class="hidden lg:table-cell text-xs text-dim" x-text="fmtDate(u.last_login_at)"></td>
                 <td class="flex flex-wrap gap-1">
+                  <button @click="openUserProfile(u.id)" class="text-xs px-2 py-1 rounded bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30">Detalhes</button>
                   <button x-show="u.status!=='approved'" @click="approveUser(u.id)" class="text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 hover:bg-green-600/30">Aprovar</button>
                   <button x-show="u.status==='approved'" @click="blockUser(u.id)" class="text-xs px-2 py-1 rounded bg-red-600/20 text-red-300 hover:bg-red-600/30">Bloquear</button>
                   <button @click="resetPassword(u)" class="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10">Senha</button>
+                  <button @click="setQuotas(u)" class="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10">Cotas</button>
                   <button @click="toggleRole(u)" class="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10" x-text="u.role==='admin'?'-Admin':'+Admin'"></button>
+                  <button @click="impersonate(u.id)" class="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 hover:bg-amber-600/30" title="Entrar como este usuário">Entrar</button>
                   <button @click="deleteUser(u.id)" class="text-xs px-2 py-1 rounded bg-red-700/30 text-red-300 hover:bg-red-700/50">×</button>
                 </td>
               </tr>
@@ -204,6 +602,101 @@
     </section>
 
   </main>
+
+  <!-- DRAWER: PERFIL DE USUÁRIO -->
+<div x-show="selectedUser" x-cloak @click.self="closeUserProfile()" class="fixed inset-0 bg-black/60 z-50 flex items-stretch justify-end">
+  <div class="glass w-full max-w-3xl h-full overflow-y-auto scrollbar p-6">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h2 class="text-xl font-bold" x-text="selectedUser?.user?.email"></h2>
+        <div class="text-xs text-dim">
+          <span x-text="'#'+selectedUser?.user?.id"></span> ·
+          <span x-text="selectedUser?.user?.role"></span> ·
+          <span x-text="selectedUser?.user?.status"></span>
+        </div>
+      </div>
+      <button @click="closeUserProfile()" class="text-dim hover:text-white text-2xl">✕</button>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div class="glass rounded-lg p-3"><div class="text-xs text-dim">Buscas</div><div class="text-lg font-bold" x-text="fmtNumber(selectedUser?.stats?.searches)"></div></div>
+      <div class="glass rounded-lg p-3"><div class="text-xs text-dim">Exports</div><div class="text-lg font-bold" x-text="fmtNumber(selectedUser?.stats?.exports)"></div></div>
+      <div class="glass rounded-lg p-3"><div class="text-xs text-dim">Chamadas IA</div><div class="text-lg font-bold" x-text="fmtNumber(selectedUser?.stats?.ai_calls)"></div></div>
+      <div class="glass rounded-lg p-3"><div class="text-xs text-amber-400">Custo IA</div><div class="text-lg font-bold text-amber-300" x-text="fmtCurrency(selectedUser?.stats?.ai_cost_usd)"></div></div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button @click="setQuotas(selectedUser?.user)" class="px-3 py-1.5 rounded-lg text-xs bg-white/5 hover:bg-white/10">Definir cotas</button>
+      <button @click="resetPassword(selectedUser?.user)" class="px-3 py-1.5 rounded-lg text-xs bg-white/5 hover:bg-white/10">Resetar senha</button>
+      <button @click="impersonate(selectedUser?.user?.id)" class="px-3 py-1.5 rounded-lg text-xs bg-amber-600/20 text-amber-300 hover:bg-amber-600/30">Entrar como</button>
+      <button x-show="selectedUser?.user?.status==='approved'" @click="blockUser(selectedUser?.user?.id).then(()=>openUserProfile(selectedUser?.user?.id))" class="px-3 py-1.5 rounded-lg text-xs bg-red-600/20 text-red-300 hover:bg-red-600/30">Bloquear</button>
+      <button x-show="selectedUser?.user?.status!=='approved'" @click="approveUser(selectedUser?.user?.id).then(()=>openUserProfile(selectedUser?.user?.id))" class="px-3 py-1.5 rounded-lg text-xs bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30">Aprovar</button>
+    </div>
+
+    <h3 class="text-sm font-semibold mt-2 mb-1">Linha do tempo (últimas 100 ações)</h3>
+    <div class="space-y-1 max-h-72 overflow-y-auto scrollbar mb-4">
+      <template x-for="a in (selectedUser?.timeline||[])" :key="a.id">
+        <div class="text-xs flex gap-2 py-1 border-b border-white/5">
+          <span class="text-dim w-32 flex-none" x-text="fmtDate(a.created_at)"></span>
+          <span class="badge" :class="actionBadge(a.action)" x-text="a.action"></span>
+          <span class="truncate" x-text="a.summary || a.path"></span>
+        </div>
+      </template>
+      <div x-show="!(selectedUser?.timeline||[]).length" class="text-dim text-xs">Sem ações.</div>
+    </div>
+
+    <h3 class="text-sm font-semibold mb-1">Buscas recentes</h3>
+    <div class="space-y-1 max-h-48 overflow-y-auto scrollbar mb-4">
+      <template x-for="r in (selectedUser?.scraper_runs||[])" :key="r.id">
+        <div class="text-xs flex gap-2 py-1 border-b border-white/5">
+          <span class="text-dim w-32 flex-none" x-text="fmtDate(r.created_at)"></span>
+          <span class="badge badge-info" x-text="r.source"></span>
+          <span class="truncate flex-1" x-text="r.query"></span>
+          <span class="text-dim font-mono" x-text="r.results"></span>
+        </div>
+      </template>
+      <div x-show="!(selectedUser?.scraper_runs||[]).length" class="text-dim text-xs">Sem buscas.</div>
+    </div>
+
+    <h3 class="text-sm font-semibold mb-1">Uso de IA recente</h3>
+    <div class="space-y-1 max-h-48 overflow-y-auto scrollbar mb-4">
+      <template x-for="a in (selectedUser?.ai_usage||[])" :key="a.id">
+        <div class="text-xs flex gap-2 py-1 border-b border-white/5">
+          <span class="text-dim w-32 flex-none" x-text="fmtDate(a.created_at)"></span>
+          <span x-text="a.feature"></span>
+          <span class="text-dim" x-text="a.model"></span>
+          <span class="font-mono ml-auto" x-text="fmtCurrency(a.cost_usd)"></span>
+        </div>
+      </template>
+      <div x-show="!(selectedUser?.ai_usage||[]).length" class="text-dim text-xs">Sem uso.</div>
+    </div>
+
+    <h3 class="text-sm font-semibold mb-1">Exports</h3>
+    <div class="space-y-1 max-h-40 overflow-y-auto scrollbar mb-4">
+      <template x-for="e in (selectedUser?.exports||[])" :key="e.id">
+        <div class="text-xs flex gap-2 py-1 border-b border-white/5">
+          <span class="text-dim w-32 flex-none" x-text="fmtDate(e.created_at)"></span>
+          <span class="badge badge-info" x-text="e.format"></span>
+          <span class="font-mono" x-text="fmtNumber(e.rows)+' linhas'"></span>
+          <span class="text-dim text-xs ml-auto" x-text="(e.file_hash||'').slice(0,8)"></span>
+        </div>
+      </template>
+      <div x-show="!(selectedUser?.exports||[]).length" class="text-dim text-xs">Sem exports.</div>
+    </div>
+
+    <h3 class="text-sm font-semibold mb-1">Histórico de login</h3>
+    <div class="space-y-1 max-h-40 overflow-y-auto scrollbar">
+      <template x-for="ev in (selectedUser?.login_history||[])" :key="ev.id">
+        <div class="text-xs flex gap-2 py-1 border-b border-white/5">
+          <span class="text-dim w-32 flex-none" x-text="fmtDate(ev.created_at)"></span>
+          <span class="badge" :class="ev.success?'badge-success':'badge-danger'" x-text="ev.success?'OK':'FAIL'"></span>
+          <span class="text-dim" x-text="ev.ip"></span>
+          <span class="text-dim text-xs truncate flex-1" x-text="ev.reason||''"></span>
+        </div>
+      </template>
+      <div x-show="!(selectedUser?.login_history||[]).length" class="text-dim text-xs">Sem registros.</div>
+    </div>
+  </div>
 </div>
 
 <script src="/static/admin.js"></script>

@@ -21,9 +21,15 @@ def _to_dict(u: User) -> dict[str, Any]:
         "is_active": bool(u.is_active),
         "created_at": u.created_at,
         "last_login_at": u.last_login_at,
+        "last_seen_at": getattr(u, "last_seen_at", None),
+        "last_ip": getattr(u, "last_ip", "") or "",
+        "last_user_agent": getattr(u, "last_user_agent", "") or "",
         "approved_at": u.approved_at,
         "approved_by": u.approved_by,
         "notes": u.notes,
+        "quota_searches_per_day": getattr(u, "quota_searches_per_day", None),
+        "quota_exports_per_day": getattr(u, "quota_exports_per_day", None),
+        "quota_ai_per_day": getattr(u, "quota_ai_per_day", None),
     }
 
 
@@ -117,7 +123,8 @@ class UserRepository:
             obj = s.get(User, user_id)
             if not obj:
                 return
-            allowed = {"full_name", "role", "status", "is_active", "notes"}
+            allowed = {"full_name", "role", "status", "is_active", "notes",
+                       "quota_searches_per_day", "quota_exports_per_day", "quota_ai_per_day"}
             for k, v in changes.items():
                 if k in allowed:
                     setattr(obj, k, v)

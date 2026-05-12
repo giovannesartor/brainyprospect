@@ -224,10 +224,42 @@ def _run_for_mode(*, req: HuntRequest, icp: ICPProfile, business_summary: str,
 
         # P1 — Paraleliza Google Maps + Bing + DuckDuckGo
         places, bing_results, ddg_results = [], [], []
+        # Helpers locais para instrumentação de scrapers
+        def _run_scraper(source: str, fn, *args, **kwargs):
+            import time as _t
+            t0 = _t.perf_counter()
+            ok = True
+            err_msg = ""
+            results = []
+            blocked = False
+            try:
+                results = fn(*args, **kwargs) or []
+            except Exception as ex:  # noqa: BLE001
+                ok = False
+                err_msg = str(ex)
+                low = err_msg.lower()
+                if any(k in low for k in ("captcha", "blocked", "429", "rate")):
+                    blocked = True
+                raise
+            finally:
+                try:
+                    from app.web.audit import log_scraper_run, current_user_id
+                    log_scraper_run(
+                        user_id=current_user_id(),
+                        source=source, query=query,
+                        city=req.city, state=req.state,
+                        results=len(results) if isinstance(results, list) else 0,
+                        duration_ms=int((_t.perf_counter() - t0) * 1000),
+                        success=ok, error=err_msg, blocked=blocked,
+                    )
+                except Exception:
+                    pass
+            return results
+
         with ThreadPoolExecutor(max_workers=3) as ex:
-            f_gmaps = ex.submit(search_google_maps, query, max_results=req.max_per_niche)
-            f_bing = ex.submit(search_bing, query, max_results=max(5, req.max_per_niche // 2))
-            f_ddg = ex.submit(search_duckduckgo, query, max_results=max(5, req.max_per_niche // 2))
+            f_gmaps = ex.submit(_run_scraper, "google_maps", search_google_maps, query, max_results=req.max_per_niche)
+            f_bing = ex.submit(_run_scraper, "bing", search_bing, query, max_results=max(5, req.max_per_niche // 2))
+            f_ddg = ex.submit(_run_scraper, "duckduckgo", search_duckduckgo, query, max_results=max(5, req.max_per_niche // 2))
             try:
                 places = f_gmaps.result() or []
             except Exception as e:

@@ -87,6 +87,14 @@ def _run_lightweight_migrations() -> None:
             ("prospection_mode", "VARCHAR(20) DEFAULT 'direct_sale'"),
             ("recommended_mode", "VARCHAR(20) DEFAULT ''"),
         ],
+        "users": [
+            ("last_seen_at", "DATETIME"),
+            ("last_ip", "VARCHAR(64) DEFAULT ''"),
+            ("last_user_agent", "VARCHAR(255) DEFAULT ''"),
+            ("quota_searches_per_day", "INTEGER"),
+            ("quota_exports_per_day", "INTEGER"),
+            ("quota_ai_per_day", "INTEGER"),
+        ],
     }
     from sqlalchemy import text
     with _engine.begin() as conn:

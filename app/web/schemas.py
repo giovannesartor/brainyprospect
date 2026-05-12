@@ -76,6 +76,9 @@ class AdminUserUpdate(BaseModel):
     status: Optional[str] = None
     is_active: Optional[bool] = None
     notes: Optional[str] = None
+    quota_searches_per_day: Optional[int] = None
+    quota_exports_per_day: Optional[int] = None
+    quota_ai_per_day: Optional[int] = None
 
 
 class AdminPasswordReset(BaseModel):

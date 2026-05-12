@@ -12,11 +12,13 @@ from fastapi.templating import Jinja2Templates
 
 from app.database.db import init_db
 from app.utils.logger import get_logger
+from app.web.audit import AuditMiddleware
 from app.web.deps import get_current_user_optional
 from app.web.routes import admin as admin_routes
 from app.web.routes import auth as auth_routes
 from app.web.routes import extras as extras_routes
 from app.web.routes import leads as leads_routes
+from app.web.routes import telemetry as telemetry_routes
 from app.web.users import UserRepository
 
 log = get_logger("web")
@@ -72,6 +74,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Audit log middleware (registra cada chamada relevante a /api/*)
+    app.add_middleware(AuditMiddleware)
+
     @app.on_event("startup")
     def _startup():
         init_db()
@@ -82,6 +87,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_routes.router)
     app.include_router(leads_routes.router)
     app.include_router(extras_routes.router)
+    app.include_router(telemetry_routes.router)
     app.include_router(admin_routes.router)
 
     # Static + templates

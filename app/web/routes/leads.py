@@ -4,7 +4,7 @@ from __future__ import annotations
 import io
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.database import (
@@ -104,7 +104,7 @@ def bulk_status(payload: dict[str, Any], _: dict = Depends(require_user)):
 
 # ---------- EXPORT ----------
 @router.get("/leads/export/{fmt}")
-def export_leads(fmt: str, _: dict = Depends(require_user)):
+def export_leads(fmt: str, request: Request, user: dict = Depends(require_user)):
     rows = LeadRepository.query(limit=10000)
     fmt = fmt.lower()
     if fmt == "csv":
@@ -121,6 +121,19 @@ def export_leads(fmt: str, _: dict = Depends(require_user)):
     with open(path, "rb") as fh:
         data = fh.read()
     fname = str(path).split("/")[-1]
+    # Audit
+    try:
+        import hashlib
+        from app.web.audit import log_export
+        ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")
+        log_export(
+            user_id=user["id"], fmt=fmt, rows=len(rows),
+            filters=dict(request.query_params),
+            file_hash=hashlib.sha256(data).hexdigest()[:32],
+            ip=ip,
+        )
+    except Exception:
+        pass
     return StreamingResponse(
         io.BytesIO(data),
         media_type=media,
@@ -186,6 +199,14 @@ def start_hunt(payload: HuntIn, user: dict = Depends(require_user)):
     )
 
     def task(progress):
+        # propaga user para scrapers/IA via context vars
+        try:
+            from app.web.audit import set_user_context
+            from app.services.ai.client import set_ai_context
+            set_user_context(user["id"])
+            set_ai_context(user["id"], "hunt")
+        except Exception:
+            pass
         result = hunt_leads(req, progress=progress)
         return {
             "search_id": result.search_id,

@@ -245,3 +245,125 @@ class User(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     approved_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_ip: Mapped[str] = mapped_column(String(64), default="")
+    last_user_agent: Mapped[str] = mapped_column(String(255), default="")
+    # Cotas (override por usuário)
+    quota_searches_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quota_exports_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quota_ai_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+# ----------------------------------------------------------------------
+# AUDIT LOG / ATIVIDADE / SEGURANÇA / IA
+# ----------------------------------------------------------------------
+class ActivityLog(Base):
+    """Registro centralizado de ações dos usuários (audit log)."""
+    __tablename__ = "activity_log"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    user_email: Mapped[str] = mapped_column(String(255), default="", index=True)
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    target_type: Mapped[str] = mapped_column(String(40), default="", index=True)
+    target_id: Mapped[str] = mapped_column(String(80), default="")
+    method: Mapped[str] = mapped_column(String(10), default="")
+    path: Mapped[str] = mapped_column(String(500), default="")
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ip: Mapped[str] = mapped_column(String(64), default="", index=True)
+    user_agent: Mapped[str] = mapped_column(String(255), default="")
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    summary: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class LoginEvent(Base):
+    """Histórico de tentativas de login."""
+    __tablename__ = "login_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), default="", index=True)
+    success: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    reason: Mapped[str] = mapped_column(String(120), default="")
+    ip: Mapped[str] = mapped_column(String(64), default="", index=True)
+    user_agent: Mapped[str] = mapped_column(String(255), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AIUsage(Base):
+    """Cada chamada à IA — tokens, custo, latência, contexto."""
+    __tablename__ = "ai_usage"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="", index=True)
+    model: Mapped[str] = mapped_column(String(80), default="")
+    feature: Mapped[str] = mapped_column(String(80), default="", index=True)  # chat/qualify/objection/...
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
+    error: Mapped[str] = mapped_column(String(500), default="")
+    prompt_excerpt: Mapped[str] = mapped_column(Text, default="")
+    response_excerpt: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class ScraperRun(Base):
+    """Cada execução de scraper (busca individual)."""
+    __tablename__ = "scraper_runs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    source: Mapped[str] = mapped_column(String(40), default="", index=True)  # google_maps/bing/ddg/site
+    query: Mapped[str] = mapped_column(String(500), default="")
+    city: Mapped[str] = mapped_column(String(120), default="")
+    state: Mapped[str] = mapped_column(String(120), default="")
+    results: Mapped[int] = mapped_column(Integer, default=0)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    success: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    error: Mapped[str] = mapped_column(String(500), default="")
+    blocked: Mapped[bool] = mapped_column(Boolean, default=False)  # CAPTCHA/429
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class ExportEvent(Base):
+    """Auditoria de exports (CSV/Excel/JSON)."""
+    __tablename__ = "export_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    format: Mapped[str] = mapped_column(String(10), default="")
+    rows: Mapped[int] = mapped_column(Integer, default=0)
+    filters_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    file_hash: Mapped[str] = mapped_column(String(64), default="")
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class TelemetryError(Base):
+    """Erros (frontend ou backend) reportados."""
+    __tablename__ = "telemetry_errors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    source: Mapped[str] = mapped_column(String(20), default="frontend")  # frontend/backend
+    page: Mapped[str] = mapped_column(String(255), default="")
+    message: Mapped[str] = mapped_column(Text, default="")
+    stack: Mapped[str] = mapped_column(Text, default="")
+    user_agent: Mapped[str] = mapped_column(String(255), default="")
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FeedbackTicket(Base):
+    """Mensagens de feedback / suporte enviadas pelos usuários."""
+    __tablename__ = "feedback_tickets"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    user_email: Mapped[str] = mapped_column(String(255), default="")
+    kind: Mapped[str] = mapped_column(String(40), default="feedback")  # bug/feedback/idea
+    subject: Mapped[str] = mapped_column(String(255), default="")
+    message: Mapped[Text] = mapped_column(Text, default="")
+    page: Mapped[str] = mapped_column(String(255), default="")
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)  # open/closed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
