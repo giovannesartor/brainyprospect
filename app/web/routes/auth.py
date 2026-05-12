@@ -26,7 +26,7 @@ def register(payload: RegisterIn, response: Response):
             email=payload.email,
             password=payload.password,
             full_name=payload.full_name,
-            status="active",  # auto-aprovação (beta fechado)
+            status="approved",  # auto-aprovação (beta fechado)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

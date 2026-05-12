@@ -29,7 +29,7 @@
       <template x-for="item in menu" :key="item.id">
         <button @click="setTab(item.id)" :data-tour="item.id"
                 :class="tab===item.id ? 'nav-item active' : 'nav-item'">
-          <svg class="icon-mini"><use :href="'#i-'+item.icon"/></svg>
+          <svg class="icon-mini" viewBox="0 0 24 24"><use x-effect="$el.setAttribute('href','#i-'+item.icon); $el.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href','#i-'+item.icon)"/></svg>
           <span x-text="item.label" class="flex-1"></span>
           <span x-show="(item.id==='hunt' && isHuntRunning()) || (item.id==='jobs' && runningJobsCount()>0)"
                 class="inline-flex items-center gap-1 text-[10px] text-indigo-400 pulse">
