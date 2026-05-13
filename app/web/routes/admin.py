@@ -284,7 +284,7 @@ def user_profile(user_id: int, _: dict = Depends(require_admin)):
             .order_by(desc(LoginEvent.created_at)).limit(20)
         ).scalars().all()
         login_history = [{
-            "success": ev.success, "reason": ev.reason, "ip": ev.ip,
+            "id": ev.id, "success": ev.success, "reason": ev.reason, "ip": ev.ip,
             "user_agent": ev.user_agent,
             "created_at": ev.created_at.isoformat() if ev.created_at else None,
         } for ev in logins]
@@ -298,19 +298,29 @@ def user_profile(user_id: int, _: dict = Depends(require_admin)):
             ).where(AIUsage.user_id == user_id)
         ).one()
 
+        # Totais de buscas e exports (contagem completa)
+        search_total = int(s.execute(
+            select(func.count(ScraperRun.id)).where(ScraperRun.user_id == user_id)
+        ).scalar() or 0)
+        export_total = int(s.execute(
+            select(func.count(ExportEvent.id)).where(ExportEvent.user_id == user_id)
+        ).scalar() or 0)
+
     quota_today = quota_consumed_today(user_id, ["searches", "exports", "ai"])
 
     return {
         "user": u,
-        "activity": activity,
+        "timeline": activity,
         "scraper_runs": scraper_runs,
         "ai_usage": ai,
         "exports": exports,
         "login_history": login_history,
-        "totals": {
-            "ai_tokens": int(ai_totals[0] or 0),
-            "ai_cost_usd": float(ai_totals[1] or 0.0),
+        "stats": {
+            "searches": search_total,
+            "exports": export_total,
             "ai_calls": int(ai_totals[2] or 0),
+            "ai_cost_usd": float(ai_totals[1] or 0.0),
+            "ai_tokens": int(ai_totals[0] or 0),
         },
         "quota_today": quota_today,
     }
