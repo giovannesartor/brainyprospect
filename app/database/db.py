@@ -47,66 +47,80 @@ def init_db() -> None:
 
 
 def _run_lightweight_migrations() -> None:
-    """Adiciona colunas novas a bancos antigos (apenas SQLite)."""
-    if IS_POSTGRES:
-        # Em Postgres confiamos em create_all + (futuramente) Alembic.
-        return
-    needed = {
+    """Adiciona colunas novas a bancos antigos (SQLite e PostgreSQL)."""
+    # (col_name, sqlite_ddl, postgres_ddl)
+    needed: dict[str, list[tuple[str, str, str]]] = {
         "leads": [
-            ("prospection_mode", "VARCHAR(20) DEFAULT 'direct_sale'"),
-            ("tags", "VARCHAR(500) DEFAULT ''"),
-            ("cnpj", "VARCHAR(20) DEFAULT ''"),
-            ("company_size", "VARCHAR(40) DEFAULT ''"),
-            ("employees_estimate", "INTEGER"),
-            ("years_in_market", "INTEGER"),
-            ("technologies", "VARCHAR(500) DEFAULT ''"),
-            ("decision_makers", "JSON"),
-            ("buying_signals", "JSON"),
-            ("match_score", "INTEGER DEFAULT 0"),
-            ("priority", "VARCHAR(20) DEFAULT 'media'"),
-            ("why_matters", "TEXT DEFAULT ''"),
-            ("opportunity_when", "VARCHAR(120) DEFAULT ''"),
-            ("opportunity_channel", "VARCHAR(40) DEFAULT ''"),
-            ("opportunity_offer", "TEXT DEFAULT ''"),
-            ("ticket_estimate", "VARCHAR(60) DEFAULT ''"),
-            ("revenue_year_estimate", "VARCHAR(60) DEFAULT ''"),
-            ("observations", "TEXT DEFAULT ''"),
-            ("follow_up_text", "TEXT DEFAULT ''"),
-            ("last_contact_at", "DATETIME"),
-            ("next_followup_at", "DATETIME"),
-            ("campaign_id", "INTEGER"),
-            ("message_a", "TEXT DEFAULT ''"),
-            ("message_b", "TEXT DEFAULT ''"),
-            ("message_opener", "VARCHAR(500) DEFAULT ''"),
-            ("message_tone", "VARCHAR(20) DEFAULT ''"),
-            ("send_status", "VARCHAR(30) DEFAULT 'nao_enviado'"),
-            ("hot_score", "INTEGER DEFAULT 0"),
-            ("followup_step", "INTEGER DEFAULT 0"),
+            ("prospection_mode", "VARCHAR(20) DEFAULT 'direct_sale'", "VARCHAR(20) DEFAULT 'direct_sale'"),
+            ("tags", "VARCHAR(500) DEFAULT ''", "VARCHAR(500) DEFAULT ''"),
+            ("cnpj", "VARCHAR(20) DEFAULT ''", "VARCHAR(20) DEFAULT ''"),
+            ("company_size", "VARCHAR(40) DEFAULT ''", "VARCHAR(40) DEFAULT ''"),
+            ("employees_estimate", "INTEGER", "INTEGER"),
+            ("years_in_market", "INTEGER", "INTEGER"),
+            ("technologies", "VARCHAR(500) DEFAULT ''", "VARCHAR(500) DEFAULT ''"),
+            ("decision_makers", "JSON", "JSON"),
+            ("buying_signals", "JSON", "JSON"),
+            ("match_score", "INTEGER DEFAULT 0", "INTEGER DEFAULT 0"),
+            ("priority", "VARCHAR(20) DEFAULT 'media'", "VARCHAR(20) DEFAULT 'media'"),
+            ("why_matters", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("opportunity_when", "VARCHAR(120) DEFAULT ''", "VARCHAR(120) DEFAULT ''"),
+            ("opportunity_channel", "VARCHAR(40) DEFAULT ''", "VARCHAR(40) DEFAULT ''"),
+            ("opportunity_offer", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("ticket_estimate", "VARCHAR(60) DEFAULT ''", "VARCHAR(60) DEFAULT ''"),
+            ("revenue_year_estimate", "VARCHAR(60) DEFAULT ''", "VARCHAR(60) DEFAULT ''"),
+            ("observations", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("follow_up_text", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("last_contact_at", "DATETIME", "TIMESTAMP"),
+            ("next_followup_at", "DATETIME", "TIMESTAMP"),
+            ("campaign_id", "INTEGER", "INTEGER"),
+            ("message_a", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("message_b", "TEXT DEFAULT ''", "TEXT DEFAULT ''"),
+            ("message_opener", "VARCHAR(500) DEFAULT ''", "VARCHAR(500) DEFAULT ''"),
+            ("message_tone", "VARCHAR(20) DEFAULT ''", "VARCHAR(20) DEFAULT ''"),
+            ("send_status", "VARCHAR(30) DEFAULT 'nao_enviado'", "VARCHAR(30) DEFAULT 'nao_enviado'"),
+            ("hot_score", "INTEGER DEFAULT 0", "INTEGER DEFAULT 0"),
+            ("followup_step", "INTEGER DEFAULT 0", "INTEGER DEFAULT 0"),
         ],
         "searches": [
-            ("prospection_mode", "VARCHAR(20) DEFAULT 'direct_sale'"),
-            ("recommended_mode", "VARCHAR(20) DEFAULT ''"),
+            ("prospection_mode", "VARCHAR(20) DEFAULT 'direct_sale'", "VARCHAR(20) DEFAULT 'direct_sale'"),
+            ("recommended_mode", "VARCHAR(20) DEFAULT ''", "VARCHAR(20) DEFAULT ''"),
         ],
         "users": [
-            ("last_seen_at", "DATETIME"),
-            ("last_ip", "VARCHAR(64) DEFAULT ''"),
-            ("last_user_agent", "VARCHAR(255) DEFAULT ''"),
-            ("quota_searches_per_day", "INTEGER"),
-            ("quota_exports_per_day", "INTEGER"),
-            ("quota_ai_per_day", "INTEGER"),
+            ("last_seen_at", "DATETIME", "TIMESTAMP"),
+            ("last_ip", "VARCHAR(64) DEFAULT ''", "VARCHAR(64) DEFAULT ''"),
+            ("last_user_agent", "VARCHAR(255) DEFAULT ''", "VARCHAR(255) DEFAULT ''"),
+            ("quota_searches_per_day", "INTEGER", "INTEGER"),
+            ("quota_exports_per_day", "INTEGER", "INTEGER"),
+            ("quota_ai_per_day", "INTEGER", "INTEGER"),
         ],
     }
     from sqlalchemy import text
     with _engine.begin() as conn:
-        for table, columns in needed.items():
-            existing = {
-                row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table})")
-            }
-            for col, ddl in columns:
-                if col not in existing:
-                    conn.exec_driver_sql(
-                        f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"
-                    )
+        if IS_POSTGRES:
+            for table, columns in needed.items():
+                result = conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns"
+                        " WHERE table_schema = 'public' AND table_name = :t"
+                    ),
+                    {"t": table},
+                )
+                existing = {row[0] for row in result}
+                for col, _, pg_ddl in columns:
+                    if col not in existing:
+                        conn.execute(
+                            text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {pg_ddl}")
+                        )
+        else:
+            for table, columns in needed.items():
+                existing = {
+                    row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table})")
+                }
+                for col, sqlite_ddl, _ in columns:
+                    if col not in existing:
+                        conn.exec_driver_sql(
+                            f"ALTER TABLE {table} ADD COLUMN {col} {sqlite_ddl}"
+                        )
 
 
 @contextmanager
